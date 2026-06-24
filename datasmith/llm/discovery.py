@@ -74,7 +74,7 @@ def _llm_extract(nl_input: str) -> Optional[NLDiscoveryResult]:
 def _save_to_cache(kg: KnowledgeGraph, nl_input: str, result: NLDiscoveryResult) -> None:
     """Save LLM extraction result to llm_cache."""
     key = _cache_key(nl_input)
-    _, _, model = _get_config()
+    _, _, model, _ = _get_config()
     kg.db.execute(
         """INSERT OR REPLACE INTO llm_cache
            (cache_key, model, response, expires_at)

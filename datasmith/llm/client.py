@@ -1,6 +1,7 @@
-"""LLM client — OpenAI-compatible API (Groq, OpenRouter, etc.).
+"""LLM client — OpenAI-compatible API (Groq, OpenRouter, Gemini).
 
 Ponytail: raw requests, no SDKs. Works with any OpenAI-compatible endpoint.
+Supports Groq, OpenRouter, and Gemini out of the box.
 """
 
 import json
@@ -12,22 +13,54 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# Default: Groq (free, fast)
-_DEFAULT_BASE = "https://api.groq.com/openai/v1"
-_DEFAULT_MODEL = "llama-3.3-70b-versatile"
+# Provider presets
+_PROVIDERS: dict[str, dict] = {
+    "groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": "llama-3.3-70b-versatile",
+        "env_key": "GROQ_API_KEY",
+    },
+    "openrouter": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "qwen/qwen3-32b:free",
+        "env_key": "OPENROUTER_API_KEY",
+    },
+    "gemini": {
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "model": "gemini-2.0-flash",
+        "env_key": "GEMINI_API_KEY",
+    },
+}
+
+_DEFAULT_PROVIDER = "groq"
 
 
-def _get_config() -> tuple[str, str, str]:
-    """Read LLM config from env vars. Falls back to Groq free tier."""
-    api_key = (
-        os.environ.get("GROQ_API_KEY")
-        or os.environ.get("OPENROUTER_API_KEY")
-        or os.environ.get("LLM_API_KEY")
-        or ""
+def _get_config() -> tuple[str, str, str, str]:
+    """Read LLM config from env vars.
+
+    Priority: GEMINI_API_KEY → GROQ_API_KEY → OPENROUTER_API_KEY → LLM_API_KEY.
+    Override endpoint with LLM_BASE_URL and model with LLM_MODEL.
+    Returns (api_key, base_url, model, provider_name).
+    """
+    # Check explicit provider env vars first
+    for pname, cfg in _PROVIDERS.items():
+        key = os.environ.get(cfg["env_key"])
+        if key:
+            return (
+                key,
+                os.environ.get("LLM_BASE_URL", cfg["base_url"]),
+                os.environ.get("LLM_MODEL", cfg["model"]),
+                pname,
+            )
+
+    # Catch-all
+    fallback_key = os.environ.get("LLM_API_KEY", "")
+    return (
+        fallback_key,
+        os.environ.get("LLM_BASE_URL", _PROVIDERS[_DEFAULT_PROVIDER]["base_url"]),
+        os.environ.get("LLM_MODEL", _PROVIDERS[_DEFAULT_PROVIDER]["model"]),
+        _DEFAULT_PROVIDER,
     )
-    base_url = os.environ.get("LLM_BASE_URL", _DEFAULT_BASE)
-    model = os.environ.get("LLM_MODEL", _DEFAULT_MODEL)
-    return api_key, base_url, model
 
 
 def chat_complete(
@@ -49,10 +82,12 @@ def chat_complete(
     Returns:
         Response text, or None on failure.
     """
-    api_key, base_url, model = _get_config()
+    api_key, base_url, model, provider = _get_config()
     if not api_key:
         logger.warning("No LLM API key configured")
         return None
+
+    logger.debug("LLM call: provider=%s model=%s", provider, model)
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -96,5 +131,5 @@ def chat_complete(
 
 def is_available() -> bool:
     """Check if an LLM API key is configured."""
-    key, _, _ = _get_config()
+    key, _, _, _ = _get_config()
     return bool(key)
