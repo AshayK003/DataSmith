@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.7 (2026-06-24)
+
+### Removed
+
+- **`_crawl_huggingface` function** (43 lines) — dead code, no SEED_DATASETS entry uses HuggingFace as source. Falls through to "skipped" cleanly.
+- **7 unused Lucide SVG icons** — `HOME`, `SEARCH`, `FOLDER`, `REFRESH`, `SLIDERS`, `CHECK`, `BAR_CHART` removed from `icons.py`. Not imported or referenced anywhere.
+- **`docs/PERFORMANCE.md`** (647 lines) — stale AI-generated performance plan, never referenced by code or docs.
+- **17 unused imports** across 10 source/test files — `json`, `pathlib.Path`, `typing.Any`, `typing.Optional`, `pytest`, `pandas`, `numpy.noqa`.
+
+### Cleanup
+
+- Net **−750 lines** across 12 files. All 94 tests pass unchanged.
+
 ## v0.3.6 (2026-06-24)
 
 ### Fixed (3 bugs found and patched by OpenCode debugging specialist)
