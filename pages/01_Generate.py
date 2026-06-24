@@ -197,7 +197,7 @@ if resolved_schema:
         data_return_mode=DataReturnMode.AS_INPUT,
         key="schema_grid",
         height=min(60 * len(fresh_data) + 80, 400),
-        allow_unsafe_jscode=True,
+        allow_unsafe_jscode=False,
     )
 
     # Capture edits back to session state
