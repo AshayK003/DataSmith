@@ -1,8 +1,11 @@
-"""Schema Crawler — extracts column schemas from real datasets via Kaggle + Frictionless.
+"""Schema Crawler — multi-source schema extraction from real datasets.
 
-Ponytail: two external deps (kagglehub, frictionless). Everything else is stdlib.
-kagglehub handles auth, rate limits, caching. Frictionless handles type inference
-and schema extraction in one call.
+Sources (in priority order):
+1. Kaggle (via kagglehub — no auth needed for public datasets)
+2. HuggingFace Datasets (via requests — free, no auth for public)
+3. Direct CSV URLs (UCI, open-data portals)
+
+Every source gets wrapped in try/except — failures are logged, never fatal.
 """
 
 import json
@@ -12,6 +15,7 @@ import time
 from typing import Optional
 
 import kagglehub
+import requests
 
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.schema.models import ColumnSchema, DatasetSchema
@@ -33,57 +37,51 @@ SEED_DOMAINS = {
     "manufacturing": "Production lines, quality control, supply chain",
 }
 
-# Mapping: domain → Kaggle dataset slugs to seed the KG
-SEED_DATASETS: dict[str, list[str]] = {
+# Datasets keyed by domain. Each entry: (source, identifier, label)
+# source: "kaggle" | "huggingface" | "url"
+SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     "e-commerce": [
-        "olistbr/brazilian-ecommerce",
-        "carrie1/ecommerce-data",
-        "shilongzhuang/amazon-sales-dataset-2023",
+        ("kaggle", "olistbr/brazilian-ecommerce", "Brazilian E-Commerce"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00452/Online%20Retail.xlsx", "Online Retail"),
+        ("huggingface", "sasha/ecommerce-behavior-data", "E-Commerce Behavior"),
     ],
     "healthcare": [
-        "miriansaei/healthcare-datasets",
-        "saurabhshahane/patient-treatment-classification",
-        "mathchi/diabetes-data-set",
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure"),
+        ("kaggle", "mathchi/diabetes-data-set", "Diabetes Dataset"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00380/2273139%20-%20Hypertension%20Data.csv", "Hypertension"),
     ],
     "finance": [
-        "borismk/credit-card-transactions-dataset",
-        "camnugent/credit-card-fraud-detection",
-        "nsharan/housing-prices-dataset",
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls", "Credit Default"),
+        ("kaggle", "borismk/credit-card-transactions-dataset", "Credit Card Transactions"),
+        ("huggingface", "sasha/financial-dataset", "Financial Dataset"),
     ],
     "education": [
-        "spsci/academic-data",
-        "jcprogjava/student-performance-data",
-        "yogesh70/students-scores-in-exams",
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00320/student.zip", "Student Performance"),
+        ("kaggle", "spsci/academic-data", "Academic Data"),
     ],
     "social-media": [
-        "shivkumarganesh/social-media-usage-data",
-        "ma7555/instagram-user-data",
-        "benjaminawd/youtube-trending-stats",
+        ("kaggle", "benjaminawd/youtube-trending-stats", "YouTube Trending"),
+        ("huggingface", "sasha/social-media-dataset", "Social Media Dataset"),
     ],
     "iot-sensors": [
-        "robervalt/sensor-readings-dataset",
-        "hugomathien/sensors-energy-prediction",
-        "uciml/electric-power-consumption-data-set",
+        ("kaggle", "uciml/electric-power-consumption-data-set", "Power Consumption"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00240/UCI%20HAR%20Dataset.zip", "Activity Recognition"),
     ],
     "real-estate": [
-        "ahmedshahriarsakib/usa-real-estate-dataset",
-        "yjb00/us-housing-prices",
-        "quantbruce/real-estate-price-prediction",
+        ("kaggle", "ahmedshahriarsakib/usa-real-estate-dataset", "USA Real Estate"),
+        ("huggingface", "sasha/real-estate-dataset", "Real Estate Dataset"),
     ],
     "transportation": [
-        "dansbecker/nyc-taxi-trip-duration",
-        "new-york-city/nyc-taxi-trip-duration",
-        "arashnic/rideshare-trip-data",
+        ("kaggle", "dansbecker/nyc-taxi-trip-duration", "NYC Taxi Trips"),
+        ("huggingface", "sasha/transportation-dataset", "Transportation Dataset"),
     ],
     "energy": [
-        "timmayer/energy-consumption",
-        "robikscube/hourly-energy-consumption",
-        "bobn31/power-generation-data",
+        ("kaggle", "robikscube/hourly-energy-consumption", "Hourly Energy"),
+        ("huggingface", "sasha/energy-dataset", "Energy Dataset"),
     ],
     "manufacturing": [
-        "rabieelkharoua/manufacturing-dataset",
-        "sagarnildass/predictive-maintenance-dataset",
-        "shyambhu/predictive-maintenance-data",
+        ("kaggle", "rabieelkharoua/manufacturing-dataset", "Manufacturing"),
+        ("huggingface", "sasha/manufacturing-dataset", "Manufacturing Data"),
     ],
 }
 
@@ -91,49 +89,62 @@ SEED_DATASETS: dict[str, list[str]] = {
 def _extract_type(ftype: str) -> str:
     """Map Frictionless type → our simplified type taxonomy."""
     mapping = {
-        "string": "text",
-        "number": "numeric",
-        "integer": "numeric",
-        "date": "datetime",
-        "datetime": "datetime",
-        "time": "datetime",
-        "year": "numeric",
-        "yearmonth": "datetime",
-        "boolean": "boolean",
-        "binary": "text",
-        "object": "text",
-        "array": "text",
-        "geopoint": "text",
-        "geojson": "text",
-        "any": "text",
+        "string": "text", "number": "numeric", "integer": "numeric",
+        "date": "datetime", "datetime": "datetime", "time": "datetime",
+        "year": "numeric", "yearmonth": "datetime",
+        "boolean": "boolean", "binary": "text", "object": "text",
+        "array": "text", "geopoint": "text", "geojson": "text", "any": "text",
     }
     return mapping.get(ftype, ftype)
+
+
+def _download_file(url: str, dest: str) -> Optional[str]:
+    """Download a file from a URL to a local path. Returns the path or None."""
+    try:
+        r = requests.get(url, timeout=30, stream=True)
+        r.raise_for_status()
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+        return dest
+    except Exception as e:
+        logger.warning("Download failed %s: %s", url, e)
+        return None
+
+
+def _find_csv_files(path: str) -> list[str]:
+    """Find all CSV files in a path (file or directory)."""
+    if os.path.isfile(path):
+        return [path] if path.endswith(".csv") else []
+    csvs = []
+    for root, _, files in os.walk(path):
+        for f in files:
+            if f.endswith(".csv"):
+                csvs.append(os.path.join(root, f))
+    return csvs
 
 
 def extract_schema(file_path: str, dataset_id: int) -> list[ColumnSchema]:
     """Extract column schemas from a CSV using Frictionless."""
     from frictionless import describe
 
-    resource = describe(file_path)
-    columns = []
-    row_count = 0
+    try:
+        resource = describe(file_path)
+    except Exception as e:
+        logger.warning("Frictionless describe failed for %s: %s", file_path, e)
+        return []
 
+    columns = []
     for field in (resource.schema.fields if resource.schema else []):
         col = ColumnSchema(
             dataset_id=dataset_id,
             column_name=field.name,
             column_description=field.description or "",
             data_type=_extract_type(field.type),
-            null_ratio=None,
+            null_ratio=0.0 if field.constraints and field.constraints.get("required") else None,
         )
-        # Extract constraints
-        if field.constraints:
-            if field.constraints.get("required"):
-                col.null_ratio = 0.0
-            else:
-                col.null_ratio = None  # unknown until we scan
         columns.append(col)
-
     return columns
 
 
@@ -145,7 +156,6 @@ def scan_data_quality(file_path: str,
 
     try:
         df = pd.read_csv(file_path, nrows=10000)
-        row_count = len(df)
     except Exception:
         return columns
 
@@ -164,103 +174,202 @@ def scan_data_quality(file_path: str,
             col_def.maximum = float(series.max()) if not series.isna().all() else None
         sample = series.dropna().unique()[:5].tolist()
         col_def.sample_values = json.dumps([str(s) for s in sample])
-
     return columns
 
 
-def crawl_dataset_schema(kg: KnowledgeGraph, domain_id: int,
-                         dataset_slug: str, dataset_name: str) -> Optional[int]:
-    """Download a Kaggle dataset, extract its schema, store in KG.
-
-    Returns the dataset_schemas.id or None on failure.
-    """
-    logger.info("Crawling %s (%s)", dataset_slug, dataset_name)
-    try:
-        path = kagglehub.dataset_download(dataset_slug)
-    except Exception as e:
-        logger.warning("Failed to download %s: %s", dataset_slug, e)
-        return None
-
-    if isinstance(path, str):
-        path = path
-
-    dataset = DatasetSchema(
-        source="kaggle",
-        source_url=f"https://kaggle.com/datasets/{dataset_slug}",
-        domain_id=domain_id,
-        dataset_name=dataset_name,
-    )
-
+def _store_schema(kg: KnowledgeGraph, dataset: DatasetSchema,
+                  csv_path: str) -> Optional[int]:
+    """Extract schema from CSV and store in KG. Returns dataset_id or None."""
     dataset_id = kg.upsert_dataset(dataset)
-
-    # Find CSV files in the downloaded path
-    csv_files = []
-    if os.path.isfile(path) and path.endswith(".csv"):
-        csv_files = [path]
-    elif os.path.isdir(path):
-        for root, _, files in os.walk(path):
-            for f in files:
-                if f.endswith(".csv"):
-                    csv_files.append(os.path.join(root, f))
-
-    if not csv_files:
-        logger.warning("No CSV files found in %s", dataset_slug)
-        return dataset_id
-
-    # Use the first CSV for schema extraction
-    csv_path = csv_files[0]
     columns = extract_schema(csv_path, dataset_id)
+    if not columns:
+        logger.warning("No columns extracted from %s", csv_path)
+        return dataset_id
     columns = scan_data_quality(csv_path, columns)
     kg.insert_columns(columns)
 
-    # Update dataset metadata
+    # Update metadata
     try:
+        import pandas as pd
         df = pd.read_csv(csv_path, nrows=10000)
-        row_count = len(df)
-        col_count = len(df.columns)
         kg.db.execute(
             "UPDATE dataset_schemas SET row_count=?, column_count=? WHERE id=?",
-            (row_count, col_count, dataset_id),
+            (len(df), len(df.columns), dataset_id),
         )
-        kg.db.commit()
     except Exception:
         kg.db.execute(
             "UPDATE dataset_schemas SET column_count=? WHERE id=?",
             (len(columns), dataset_id),
         )
-        kg.db.commit()
-
-    logger.info("Stored %d columns from %s", len(columns), dataset_slug)
+    kg.db.commit()
+    logger.info("Stored %d columns from dataset %d", len(columns), dataset_id)
     return dataset_id
 
 
+def _crawl_kaggle(kg: KnowledgeGraph, dataset_slug: str,
+                  dataset_name: str, domain_id: int) -> Optional[int]:
+    """Download and process a Kaggle dataset. Returns dataset_id or None."""
+    logger.info("Kaggle: %s (%s)", dataset_slug, dataset_name)
+    try:
+        path = kagglehub.dataset_download(dataset_slug)
+    except Exception as e:
+        msg = str(e).lower()
+        if "403" in msg or "permission" in msg or "authenticated" in msg:
+            logger.warning("Kaggle %s needs auth — skipping", dataset_slug)
+        else:
+            logger.warning("Kaggle %s failed: %s", dataset_slug, e)
+        return None
+
+    if isinstance(path, str):
+        path = path
+
+    csv_files = _find_csv_files(path)
+    if not csv_files:
+        logger.warning("No CSVs in Kaggle %s", dataset_slug)
+        return None
+
+    dataset = DatasetSchema(
+        source="kaggle",
+        source_url=f"https://kaggle.com/datasets/{dataset_slug}",
+        dataset_name=dataset_name,
+        domain_id=domain_id,
+    )
+    return _store_schema(kg, dataset, csv_files[0])
+
+
+def _crawl_huggingface(kg: KnowledgeGraph, dataset_name: str,
+                       display_name: str, domain_id: int) -> Optional[int]:
+    """Download and process a HuggingFace dataset. Returns dataset_id or None."""
+    logger.info("HuggingFace: %s (%s)", dataset_name, display_name)
+    try:
+        # List files via HF API
+        api_url = f"https://huggingface.co/api/datasets/{dataset_name}"
+        r = requests.get(api_url, timeout=15)
+        r.raise_for_status()
+        info = r.json()
+    except Exception as e:
+        logger.warning("HF API failed for %s: %s", dataset_name, e)
+        return None
+
+    # Find CSV files from the dataset info
+    csv_urls = []
+    siblings = info.get("siblings", [])
+    for sib in siblings:
+        rfilename = sib.get("rfilename", "")
+        if rfilename.endswith(".csv"):
+            csv_urls.append(
+                f"https://huggingface.co/datasets/{dataset_name}/raw/main/{rfilename}"
+            )
+
+    if not csv_urls:
+        logger.warning("No CSVs found in HF %s", dataset_name)
+        return None
+
+    # Download first CSV
+    dest = os.path.join(".cache", "hf", dataset_name.replace("/", "_"),
+                        os.path.basename(csv_urls[0]))
+    local_path = _download_file(csv_urls[0], dest)
+    if not local_path:
+        return None
+
+    dataset = DatasetSchema(
+        source="huggingface",
+        source_url=f"https://huggingface.co/datasets/{dataset_name}",
+        dataset_name=display_name,
+        domain_id=domain_id,
+    )
+    return _store_schema(kg, dataset, local_path)
+
+
+def _crawl_url(kg: KnowledgeGraph, url: str,
+               display_name: str, domain_id: int) -> Optional[int]:
+    """Download a CSV from a direct URL and process it. Returns dataset_id or None."""
+    logger.info("URL: %s (%s)", url, display_name)
+    ext = os.path.splitext(url.split("?")[0])[1] or ".csv"
+    dest = os.path.join(".cache", "url", f"{display_name.lower().replace(' ', '_')}{ext}")
+    local_path = _download_file(url, dest)
+    if not local_path:
+        return None
+
+    # If it's a zip, extract and find CSVs
+    if local_path.endswith(".zip"):
+        import zipfile
+        import tempfile
+        try:
+            with zipfile.ZipFile(local_path, "r") as zf:
+                extract_dir = tempfile.mkdtemp()
+                zf.extractall(extract_dir)
+                csvs = _find_csv_files(extract_dir)
+                if not csvs:
+                    logger.warning("No CSVs in zip %s", url)
+                    return None
+                local_path = csvs[0]
+        except Exception as e:
+            logger.warning("Failed to extract %s: %s", url, e)
+            return None
+
+    # If it's Excel, convert first CSV sheet
+    if local_path.endswith((".xls", ".xlsx")):
+        try:
+            import pandas as pd
+            df = pd.read_excel(local_path)
+            csv_path = local_path.rsplit(".", 1)[0] + ".csv"
+            df.to_csv(csv_path, index=False)
+            local_path = csv_path
+        except Exception as e:
+            logger.warning("Failed to convert Excel %s: %s", url, e)
+            return None
+
+    if not local_path.endswith(".csv"):
+        logger.warning("Unsupported format for %s", url)
+        return None
+
+    dataset = DatasetSchema(
+        source="url",
+        source_url=url,
+        dataset_name=display_name,
+        domain_id=domain_id,
+    )
+    return _store_schema(kg, dataset, local_path)
+
+
+# Source dispatch table
+_SOURCE_DISPATCH = {
+    "kaggle": _crawl_kaggle,
+    "huggingface": _crawl_huggingface,
+    "url": _crawl_url,
+}
+
+
 def seed_knowledge_graph(kg: KnowledgeGraph,
-                         datasets: Optional[dict[str, list[str]]] = None,
-                         delay: float = 2.0) -> dict:
-    """Seed the KG with initial datasets across domains.
+                         datasets: Optional[dict[str, list[tuple[str, str, str]]]] = None,
+                         delay: float = 1.0) -> dict:
+    """Seed the KG with initial datasets across multiple sources.
 
     Args:
         kg: KnowledgeGraph instance.
-        datasets: Domain→[dataset_slug] mapping. Defaults to SEED_DATASETS.
-        delay: Seconds between crawls to respect Kaggle rate limits.
+        datasets: Domain → [(source, identifier, label), ...] mapping.
+                  source: "kaggle" | "huggingface" | "url"
+        delay: Seconds between crawls to respect rate limits.
 
-    Returns: {domain: {dataset: success_or_error}}
+    Returns: {domain: {display_name: "ok"|"skipped"|"failed"}}
     """
-    import pandas as pd  # noqa: F401 — used by scan_data_quality
+    import pandas as pd  # noqa: F401
+    import numpy as np  # noqa: F401
 
     results: dict = {}
     datasets = datasets or SEED_DATASETS
 
-    for domain_name, slugs in datasets.items():
+    for domain_name, entries in datasets.items():
         domain_id = kg.upsert_domain(domain_name, SEED_DOMAINS.get(domain_name, ""))
         domain_results = {}
-        for slug in slugs:
-            name = slug.split("/")[-1].replace("-", " ").title()
-            dataset_id = crawl_dataset_schema(kg, domain_id, slug, name)
-            if dataset_id:
-                domain_results[slug] = "ok"
-            else:
-                domain_results[slug] = "failed"
+        for source, identifier, label in entries:
+            crawler = _SOURCE_DISPATCH.get(source)
+            if not crawler:
+                domain_results[f"{source}:{identifier}"] = "skipped"
+                continue
+            ds_id = crawler(kg, identifier, label, domain_id)
+            domain_results[label] = "ok" if ds_id else "failed"
             time.sleep(delay)
         results[domain_name] = domain_results
 
