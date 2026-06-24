@@ -173,6 +173,8 @@ def generate_column(col_name: str, data_type: str,
         end = stats.get("max_date", "2024-12-31")
         start_ns = np.datetime64(start, "ns")
         end_ns = np.datetime64(end, "ns")
+        if end_ns < start_ns:
+            start_ns, end_ns = end_ns, start_ns
         span_ns = int(end_ns - start_ns)
         offsets = (rng.random(n) * span_ns).astype("timedelta64[ns]")
         return start_ns + offsets

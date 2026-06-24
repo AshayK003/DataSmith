@@ -59,7 +59,7 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
             related_col = None
             for corr in null_corrs:
                 if col in corr.get("cols", []) and len(corr["cols"]) >= 2:
-                    related_col = [c for c in corr["cols"] if c != col][0]
+                    related_col = next((c for c in corr["cols"] if c != col), None)
                     break
             if related_col and related_col in df.columns:
                 # If related column has values in the extreme, null more often
@@ -178,6 +178,8 @@ def inject_noise(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         # Apply rounding to a subset of non-null values
         if rounding_pct > 0:
             series = df[col].dropna()
+            if len(series) == 0:
+                continue
             n_round = max(1, int(len(series) * rounding_pct / 100))
             round_idx = rng.choice(len(series), n_round, replace=False)
             for idx in round_idx:

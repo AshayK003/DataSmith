@@ -61,3 +61,16 @@ class TestGenerateColumnUnknownDistribution:
         data = generate_column("test", "numeric", stats, 100, rng)
         assert len(data) == 100
         assert np.all(np.isfinite(data))
+
+
+class TestGenerateColumnDatetimeReverseRange:
+    """Datetime column with end < start produces valid dates."""
+
+    def test_generate_column_datetime_reverse_range(self):
+        rng = np.random.default_rng(42)
+        stats = {"min_date": "2024-01-01", "max_date": "2020-01-01"}
+        data = generate_column("test", "datetime", stats, 100, rng)
+        assert len(data) == 100
+        dates = pd.to_datetime(data)
+        assert dates.min() >= pd.Timestamp("2020-01-01")
+        assert dates.max() <= pd.Timestamp("2024-01-01")
