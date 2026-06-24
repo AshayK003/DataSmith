@@ -70,7 +70,7 @@ with discover_tab:
         placeholder="e.g., e-commerce transactions with customer demographics and order history",
         help="Plain English description. The AI will suggest a matching schema.",
     )
-    use_nl = st.button(f"{icons.SEARCH} Discover Schema", type="primary", use_container_width=True)
+    use_nl = st.button("Discover Schema", type="primary", use_container_width=True)
 
 with browse_tab:
     domain_name = st.selectbox(
@@ -183,7 +183,7 @@ if resolved_schema:
 
     # ── Generate ─────────────────────────────────────────────────────────
 
-    if st.button(f"{icons.SPARKLES} Generate Dataset", type="primary", use_container_width=True):
+    if st.button("Generate Dataset", type="primary", use_container_width=True):
         if not edited or len(edited) == 0:
             st.error("At least one column is required.")
             st.stop()
@@ -305,6 +305,6 @@ if "last_df" in st.session_state:
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button(f"{icons.REFRESH} Regenerate", use_container_width=True):
+    if st.button("Regenerate", use_container_width=True):
         del st.session_state["last_df"]
         st.rerun()

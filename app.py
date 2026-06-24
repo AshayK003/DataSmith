@@ -17,13 +17,13 @@ def _load_css() -> str:
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --ds-accent: #2563eb;
-    --ds-accent-dim: #1d4ed8;
-    --ds-bg: #ffffff;
-    --ds-surface: #f8fafc;
-    --ds-border: #e2e8f0;
-    --ds-text: #0f172a;
-    --ds-text-muted: #64748b;
+    --ds-accent: #3b82f6;
+    --ds-accent-dim: #2563eb;
+    --ds-bg: #0f1117;
+    --ds-surface: #161822;
+    --ds-border: #1e2030;
+    --ds-text: #e2e8f0;
+    --ds-text-muted: #94a3b8;
     --ds-radius: 8px;
 }
 
@@ -191,9 +191,9 @@ with col_b:
         '<a href="https://chai4.me/ashaykushwaha003" target="_blank" '
         'title="Support ashaykushwaha003 on Chai4Me" '
         'style="display:inline-flex;flex-direction:column;align-items:center;'
-        'justify-content:center;background:#ffffff;padding:8px 32px;'
+        'justify-content:center;background:rgba(255,255,255,0.05);padding:8px 32px;'
         'border-radius:16px;text-decoration:none;'
-        'border:1px solid #e5e7eb;'
+        'border:1px solid var(--ds-border);'
         'box-shadow:0 4px 6px -1px rgba(0,0,0,0.05), '
         '0 2px 4px -2px rgba(0,0,0,0.05);transition:transform 0.2s;">'
         '<img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" '
