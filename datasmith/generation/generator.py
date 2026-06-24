@@ -72,7 +72,7 @@ def _sample_uniform(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     return rng.uniform(lo, hi, n)
 
 
-def _sample_neg_binomial(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
+def _sample_beta_left_skewed(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     """Left-skewed (negatively skewed) using beta distribution."""
     mean = stat.get("mean", 0.5)
     std = max(stat.get("std", 0.2), 0.01)
@@ -93,7 +93,7 @@ _DISTRIBUTIONS = {
     "powerlaw": _sample_powerlaw,
     "lognormal": _sample_lognormal,
     "uniform": _sample_uniform,
-    "neg_binomial": _sample_neg_binomial,
+    "left_skewed": _sample_beta_left_skewed,
 }
 
 
@@ -127,7 +127,7 @@ def _infer_distribution(skewness: float) -> str:
     elif skewness > 0.3:
         return "lognormal"
     elif skewness < -0.3:
-        return "neg_binomial"
+        return "left_skewed"
     return "normal"
 
 

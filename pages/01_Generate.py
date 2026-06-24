@@ -12,7 +12,7 @@ from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.llm.client import is_available as llm_available
 from datasmith.llm.discovery import discover_schema
 from datasmith.schema.crawler import SEED_DOMAINS
-from datasmith.generation.engine import generate_dataset, schema_from_kg, _generic_schema
+from datasmith.generation.engine import generate_dataset, schema_from_kg, get_generic_schema
 from datasmith.ui import icons
 from datasmith.ui.components import render_header
 
@@ -113,7 +113,7 @@ elif use_domain:
     with st.spinner("Loading domain..."):
         resolved_schema = schema_from_kg(kg, domain_name)
         if not resolved_schema:
-            resolved_schema = _generic_schema(domain_name)
+            resolved_schema = get_generic_schema(domain_name)
         schema_source = f"Domain: **{domain_name.replace('-', ' ').title()}**"
         st.session_state["active_domain"] = domain_name
 

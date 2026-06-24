@@ -6,7 +6,6 @@ from Kaggle/UCI/HuggingFace, indexed for full-text search by domain and column.
 
 import hashlib
 import json
-import time
 from typing import Optional
 
 from datasmith.core.database import Database
@@ -214,7 +213,6 @@ class KnowledgeGraph:
 
         Merges columns by name across all datasets in the domain:
         - First dataset's column wins on stats (mean, std, etc.)
-        - 'maximum' in DB is mapped to 'max' for generator compatibility
 
         Returns None if the domain or its datasets don't exist.
         """

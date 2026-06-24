@@ -239,6 +239,6 @@ with col_b:
         '<p style="color:var(--ds-text-muted);font-size:0.8em;margin-top:8px;">'
         "If DataSmith helps your project, consider supporting</p></div>"
         '<p style="text-align:center;color:var(--ds-text-muted);font-size:0.75em;margin-top:12px;">'
-        "DataSmith v0.3.1</p>",
+        "DataSmith v0.3.3</p>",
         unsafe_allow_html=True,
     )

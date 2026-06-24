@@ -5,7 +5,6 @@ engine provides a single entry point. No async, no queues — keep it synchronou
 for Phase 1 (runs under Streamlit, single user).
 """
 
-import json
 import logging
 from typing import Optional
 
@@ -14,7 +13,6 @@ import pandas as pd
 
 from datasmith.imperfections.injector import apply_profile
 from datasmith.imperfections.profiles import load_profile_from_kg
-from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.generation.generator import generate_from_schema
 
@@ -67,6 +65,9 @@ def _generic_schema(domain_name: str) -> list[dict]:
         {"column_name": "value", "data_type": "numeric",
          "mean": 50.0, "std": 20.0, "min": 0, "max": 100},
     ])
+
+
+get_generic_schema = _generic_schema
 
 
 def generate_dataset(kg: KnowledgeGraph,

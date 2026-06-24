@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.4 (2026-06-24)
+
+### Changed
+- **Version strings synced** — `pyproject.toml` → 0.3.3, `app.py` + `About.py` → v0.3.3. All three are now consistent.
+- **`_sample_neg_binomial` renamed** → `_sample_beta_left_skewed` (uses beta distribution, not negative binomial). Dict key updated to `"left_skewed"`.
+- **`_generic_schema` made public** → added `get_generic_schema` alias. Page import updated.
+
+### Removed
+- **3 dead imports** — `import json` and `from crawler import SEED_DOMAINS` from `engine.py`; `import time` from `knowledge_graph.py`.
+
+### Fixed
+- **Stale docstring** in `get_column_schemas_for_domain()` — removed reference to the old "maximum→max" mapping that was fixed in v0.3.3.
+
 ## v0.3.3 (2026-06-24)
 
 ### Fixed
