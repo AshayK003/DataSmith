@@ -42,22 +42,22 @@ SEED_DOMAINS = {
 SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     "e-commerce": [
         ("kaggle", "olistbr/brazilian-ecommerce", "Brazilian E-Commerce"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00452/Online%20Retail.xlsx", "Online Retail"),
         ("huggingface", "sasha/ecommerce-behavior-data", "E-Commerce Behavior"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),
     ],
     "healthcare": [
         ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure"),
         ("kaggle", "mathchi/diabetes-data-set", "Diabetes Dataset"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00380/2273139%20-%20Hypertension%20Data.csv", "Hypertension"),
     ],
     "finance": [
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls", "Credit Default"),
         ("kaggle", "borismk/credit-card-transactions-dataset", "Credit Card Transactions"),
         ("huggingface", "sasha/financial-dataset", "Financial Dataset"),
+        ("url", "https://raw.githubusercontent.com/curran/data/gh-pages/worldbank/worldbank-data/worldbank.json", "World Bank Data"),
     ],
     "education": [
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00320/student.zip", "Student Performance"),
         ("kaggle", "spsci/academic-data", "Academic Data"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", "Wine Quality Red"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),
     ],
     "social-media": [
         ("kaggle", "benjaminawd/youtube-trending-stats", "YouTube Trending"),
@@ -65,7 +65,7 @@ SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     ],
     "iot-sensors": [
         ("kaggle", "uciml/electric-power-consumption-data-set", "Power Consumption"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00240/UCI%20HAR%20Dataset.zip", "Activity Recognition"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", "Wine Quality White"),
     ],
     "real-estate": [
         ("kaggle", "ahmedshahriarsakib/usa-real-estate-dataset", "USA Real Estate"),
@@ -98,10 +98,10 @@ def _extract_type(ftype: str) -> str:
     return mapping.get(ftype, ftype)
 
 
-def _download_file(url: str, dest: str) -> Optional[str]:
+def _download_file(url: str, dest: str, timeout: int = 120) -> Optional[str]:
     """Download a file from a URL to a local path. Returns the path or None."""
     try:
-        r = requests.get(url, timeout=30, stream=True)
+        r = requests.get(url, timeout=timeout, stream=True)
         r.raise_for_status()
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         with open(dest, "wb") as f:
@@ -266,8 +266,9 @@ def _crawl_huggingface(kg: KnowledgeGraph, dataset_name: str,
         return None
 
     # Download first CSV
-    dest = os.path.join(".cache", "hf", dataset_name.replace("/", "_"),
-                        os.path.basename(csv_urls[0]))
+    import tempfile
+    dest = os.path.join(tempfile.gettempdir(),
+                        f"datasmith_hf_{dataset_name.replace('/', '_')}_{os.path.basename(csv_urls[0])}")
     local_path = _download_file(csv_urls[0], dest)
     if not local_path:
         return None
@@ -284,9 +285,11 @@ def _crawl_huggingface(kg: KnowledgeGraph, dataset_name: str,
 def _crawl_url(kg: KnowledgeGraph, url: str,
                display_name: str, domain_id: int) -> Optional[int]:
     """Download a CSV from a direct URL and process it. Returns dataset_id or None."""
+    import tempfile
     logger.info("URL: %s (%s)", url, display_name)
     ext = os.path.splitext(url.split("?")[0])[1] or ".csv"
-    dest = os.path.join(".cache", "url", f"{display_name.lower().replace(' ', '_')}{ext}")
+    dest = os.path.join(tempfile.gettempdir(),
+                        f"datasmith_url_{display_name.lower().replace(' ', '_')}{ext}")
     local_path = _download_file(url, dest)
     if not local_path:
         return None
