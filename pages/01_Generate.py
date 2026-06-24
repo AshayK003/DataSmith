@@ -46,6 +46,8 @@ if "_resolved_schema" not in st.session_state:
     st.session_state["_resolved_schema"] = None
 if "_schema_source" not in st.session_state:
     st.session_state["_schema_source"] = None
+if "_resolved_schema_ver" not in st.session_state:
+    st.session_state["_resolved_schema_ver"] = 0
 
 # ── Init KG ──────────────────────────────────────────────────────────────
 
@@ -103,6 +105,7 @@ if use_nl and nl_input:
             resolved = discover_schema(kg, nl_input)
             if resolved:
                 st.session_state["_resolved_schema"] = resolved
+                st.session_state["_resolved_schema_ver"] += 1
                 st.session_state["_schema_source"] = f"Description: _{nl_input}_"
                 st.session_state["active_domain"] = nl_input[:40]
             else:
@@ -117,6 +120,7 @@ elif use_domain:
         if not resolved:
             resolved = get_generic_schema(domain_name)
         st.session_state["_resolved_schema"] = resolved
+        st.session_state["_resolved_schema_ver"] += 1
         st.session_state["_schema_source"] = f"Domain: **{domain_name.replace('-', ' ').title()}**"
         st.session_state["active_domain"] = domain_name
 
@@ -142,7 +146,8 @@ if resolved_schema:
             st.caption(" | ".join(meta))
     st.caption("Edit column names, types, and parameters. Add or remove rows.")
 
-    editor_data = []
+    # Build fresh data from resolved schema
+    fresh_data = []
     for col in resolved_schema:
         dtype = col.get("data_type", "numeric").lower()
         if dtype in ("numeric", "integer"):
@@ -154,7 +159,7 @@ if resolved_schema:
         else:
             display_type = "text"
 
-        editor_data.append({
+        fresh_data.append({
             "column_name": col.get("column_name", "col"),
             "data_type": display_type,
             "mean": col.get("mean", 50.0),
@@ -163,8 +168,14 @@ if resolved_schema:
             "max": col.get("max", 100.0) if display_type == "numeric" else 100.0,
         })
 
+    # Persist editor data in session state — only rebuild from schema
+    # when the schema version bumps (new discovery / new domain).
+    if st.session_state.get("_editor_schema_ver", -1) != st.session_state.get("_resolved_schema_ver", -1):
+        st.session_state["_editor_data"] = fresh_data
+        st.session_state["_editor_schema_ver"] = st.session_state["_resolved_schema_ver"]
+
     edited = st.data_editor(
-        editor_data,
+        st.session_state.get("_editor_data", fresh_data),
         column_config={
             "column_name": st.column_config.TextColumn("Column Name", width="medium"),
             "data_type": st.column_config.SelectboxColumn(
@@ -179,6 +190,9 @@ if resolved_schema:
         hide_index=True,
         key="schema_editor",
     )
+
+    # Persist user's edits back
+    st.session_state["_editor_data"] = edited
 
     # ── Generation options ───────────────────────────────────────────────
 
