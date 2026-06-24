@@ -88,22 +88,26 @@ def generate_dataset(kg: KnowledgeGraph,
 
     Returns Generated DataFrame.
     """
-    rng = np.random.default_rng(seed)
+    try:
+        rng = np.random.default_rng(seed)
 
-    # Step 1: Get schema
-    schema = custom_schema or schema_from_kg(kg, domain_name)
-    if not schema:
-        schema = _generic_schema(domain_name)
-    if not schema:
-        raise ValueError(f"No schema found for domain '{domain_name}'")
+        # Step 1: Get schema
+        schema = custom_schema or schema_from_kg(kg, domain_name)
+        if not schema:
+            schema = _generic_schema(domain_name)
+        if not schema:
+            raise ValueError(f"No schema found for domain '{domain_name}'")
 
-    # Step 2: Generate
-    df = generate_from_schema(schema, n_rows, rng)
+        # Step 2: Generate
+        df = generate_from_schema(schema, n_rows, rng)
 
-    # Step 3: Inject imperfections
-    if inject_imperfections:
-        profile = load_profile_from_kg(kg, domain_name)
-        if profile:
-            apply_profile(df, profile, rng)
+        # Step 3: Inject imperfections
+        if inject_imperfections:
+            profile = load_profile_from_kg(kg, domain_name)
+            if profile:
+                apply_profile(df, profile, rng)
 
-    return df
+        return df
+    except Exception:
+        logger.exception("Dataset generation failed")
+        raise RuntimeError("An internal error occurred during generation.")

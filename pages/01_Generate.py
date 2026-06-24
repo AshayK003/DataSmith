@@ -103,6 +103,12 @@ if use_nl and nl_input:
             "Using domain browser instead."
         )
     else:
+        now = time.time()
+        last = st.session_state.get("_last_llm_call", 0.0)
+        if now - last < 5.0:
+            st.warning("Please wait a few seconds before making another LLM request.")
+            st.stop()
+        st.session_state["_last_llm_call"] = now
         with st.spinner("Analyzing your description..."):
             resolved = discover_schema(kg, nl_input)
             if resolved:
@@ -268,8 +274,12 @@ if resolved_schema:
     grid_df = st.session_state["_grid_data"]
     edited = []
     for _, row in grid_df.iterrows():
+        raw_name = str(row.get("column_name", "") or "")
+        sanitized = re.sub(r'[^\w\- ]', '', raw_name)[:128]
+        if not sanitized.strip():
+            sanitized = "column"
         entry = {
-            "column_name": row.get("column_name", "col"),
+            "column_name": sanitized,
             "data_type": row.get("data_type", "text"),
         }
         if entry["data_type"] == "numeric":

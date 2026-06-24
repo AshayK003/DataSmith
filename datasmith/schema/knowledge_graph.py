@@ -109,7 +109,7 @@ class KnowledgeGraph:
         for v, sql in sorted(MIGRATIONS.items()):
             if v > version:
                 self.db.executescript(sql)
-                self.db.execute(f"PRAGMA user_version = {v}")
+                self.db.execute(f"PRAGMA user_version = {int(v)}")
         self.db.commit()
 
     # ── Domains ──────────────────────────────────────────────────────────
