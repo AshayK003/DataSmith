@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.5 (2026-06-24)
+
+### Security (7 fixes applied from external audit)
+
+- **LLM input sanitization** — control characters stripped, XML isolation tags around user input, anti-injection system prompt instruction added (`datasmith/llm/discovery.py`)
+- **Removed `allow_unsafe_jscode=True`** — AG Grid no longer permits JavaScript execution in cell renderers, closing a stored XSS vector (`pages/01_Generate.py`)
+- **Column name sanitization** — non-alphanumeric/non-whitespace characters stripped, length capped at 128 chars, blank names default to "column" (`pages/01_Generate.py`)
+- **CSV formula injection prevention** — cells starting with `=`, `+`, `-`, or `@` are prefixed with `'` before export to prevent Excel formula execution (`pages/01_Generate.py`)
+- **LLM rate limiting** — 5-second session-level cooldown between discovery calls to prevent API credit burn (`pages/01_Generate.py`)
+- **Safe error messages** — generic user-facing error on generation failure; full exception logged with stack trace (`datasmith/generation/engine.py`)
+- **Parameterized PRAGMA query** — `PRAGMA user_version` now uses parameterized `?` placeholder instead of f-string (`datasmith/schema/knowledge_graph.py`)
+
+### Changed
+
+- **Schema editor replaced** — `st.data_editor` (lost edits on re-run) and per-column form widgets both replaced with **AG Grid** (`streamlit-aggrid`). Editable cells, dropdown type editor, built-in sorting/filtering, stable state across re-runs. Delete Selected reads persisted grid component value directly from `st.session_state` for reliable row removal.
+- **Delete button styled red** — CSS override for danger styling on the Delete Selected button.
+- **90 tests** (unchanged) — all pass.
+- **Dependency added:** `streamlit-aggrid>=1.2.1.post2`
+
 ## v0.3.4 (2026-06-24)
 
 ### Changed

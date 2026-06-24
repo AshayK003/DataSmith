@@ -133,4 +133,4 @@ If DataSmith saves you time or helps your project, consider supporting developme
 |-------|-------|--------|
 | Phase 0 | Schema Knowledge Graph + Imperfection Fingerprints | ✅ Complete |
 | Phase 1 | Core Generator MVP (Streamlit app + generation) | ✅ Complete |
-| Phase 2 | Community Schema Library + SDV integration | 🔜 Planned |
+| Phase 2 | Security Hardening + Community Schema Library + SDV integration | 🔜 Planned |
