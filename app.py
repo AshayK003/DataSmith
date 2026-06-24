@@ -98,6 +98,20 @@ with st.sidebar:
     st.page_link("pages/02_About.py", label="About", icon="ℹ️")
     st.divider()
     st.caption("DataSmith v0.2.0 — AGPL v3")
+    st.divider()
+    st.markdown(
+        '<a href="https://chai4.me/ashaykushwaha003" target="_blank" '
+        'title="Support ashaykushwaha003 on Chai4Me" '
+        'style="display:inline-flex;flex-direction:column;align-items:center;'
+        'justify-content:center;background:#ffffff;padding:8px 32px;'
+        'border-radius:16px;text-decoration:none;'
+        'border:1px solid #e5e7eb;'
+        'box-shadow:0 4px 6px -1px rgba(0,0,0,0.05), '
+        '0 2px 4px -2px rgba(0,0,0,0.05);transition:transform 0.2s;">'
+        '<img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" '
+        'style="height:32px;object-fit:contain;"/></a>',
+        unsafe_allow_html=True,
+    )
 
 # ── Main content ──────────────────────────────────────────────────────────
 

@@ -112,6 +112,12 @@ uv run python scripts/crawl_and_analyze.py --source url
 uv run flake8 datasmith/ tests/ --max-line-length=100
 ```
 
+## Support
+
+If DataSmith saves you time or helps your project, consider supporting development:
+
+<a href="https://chai4.me/ashaykushwaha003" target="_blank" title="Support ashaykushwaha003 on Chai4Me" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;background:#ffffff;padding:8px 32px;border-radius:16px;text-decoration:none;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);transition:transform 0.2s;"><img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" style="height:32px;object-fit:contain;"/></a>
+
 ## License
 
 **AGPL v3** — free to use, share, and modify. Cannot be used in closed-source commercial products. See [LICENSE](LICENSE).
