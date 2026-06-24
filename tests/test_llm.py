@@ -1,6 +1,5 @@
 """Tests for LLM → Schema discovery pipeline."""
 
-import json
 import tempfile
 from unittest.mock import patch
 

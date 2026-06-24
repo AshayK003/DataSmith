@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from datasmith.core.database import Database
 from datasmith.schema.knowledge_graph import KnowledgeGraph

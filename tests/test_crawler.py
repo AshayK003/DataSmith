@@ -1,8 +1,5 @@
 """Tests for Schema Crawler — network-mocked, file-backed."""
 
-import numpy as np
-import pandas as pd
-import pytest
 import requests
 from unittest.mock import MagicMock, patch
 

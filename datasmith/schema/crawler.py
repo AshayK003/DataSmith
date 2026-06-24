@@ -278,51 +278,6 @@ def _crawl_kaggle(kg: KnowledgeGraph, dataset_slug: str,
     return _store_schema(kg, dataset, csv_files[0])
 
 
-def _crawl_huggingface(kg: KnowledgeGraph, dataset_name: str,
-                       display_name: str, domain_id: int) -> Optional[int]:
-    """Download and process a HuggingFace dataset. Returns dataset_id or None."""
-    logger.info("HuggingFace: %s (%s)", dataset_name, display_name)
-    try:
-        # List files via HF API
-        api_url = f"https://huggingface.co/api/datasets/{dataset_name}"
-        r = requests.get(api_url, timeout=15)
-        r.raise_for_status()
-        info = r.json()
-    except Exception as e:
-        logger.warning("HF API failed for %s: %s", dataset_name, e)
-        return None
-
-    # Find CSV files from the dataset info
-    csv_urls = []
-    siblings = info.get("siblings", [])
-    for sib in siblings:
-        rfilename = sib.get("rfilename", "")
-        if rfilename.endswith(".csv"):
-            csv_urls.append(
-                f"https://huggingface.co/datasets/{dataset_name}/raw/main/{rfilename}"
-            )
-
-    if not csv_urls:
-        logger.warning("No CSVs found in HF %s", dataset_name)
-        return None
-
-    # Download first CSV
-    import tempfile
-    dest = os.path.join(tempfile.gettempdir(),
-                        f"datasmith_hf_{dataset_name.replace('/', '_')}_{os.path.basename(csv_urls[0])}")
-    local_path = _download_file(csv_urls[0], dest)
-    if not local_path:
-        return None
-
-    dataset = DatasetSchema(
-        source="huggingface",
-        source_url=f"https://huggingface.co/datasets/{dataset_name}",
-        dataset_name=display_name,
-        domain_id=domain_id,
-    )
-    return _store_schema(kg, dataset, local_path)
-
-
 def _crawl_url(kg: KnowledgeGraph, url: str,
                display_name: str, domain_id: int) -> Optional[int]:
     """Download a CSV from a direct URL and process it. Returns dataset_id or None."""
@@ -379,7 +334,6 @@ def _crawl_url(kg: KnowledgeGraph, url: str,
 # Source dispatch table
 _SOURCE_DISPATCH = {
     "kaggle": _crawl_kaggle,
-    "huggingface": _crawl_huggingface,
     "url": _crawl_url,
 }
 
@@ -397,9 +351,6 @@ def seed_knowledge_graph(kg: KnowledgeGraph,
 
     Returns: {domain: {display_name: "ok"|"skipped"|"failed"}}
     """
-    import pandas as pd  # noqa: F401
-    import numpy as np  # noqa: F401
-
     results: dict = {}
     datasets = datasets if datasets is not None else SEED_DATASETS
 

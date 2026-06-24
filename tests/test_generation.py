@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from datasmith.generation import generator, engine
 from datasmith.imperfections.injector import apply_profile

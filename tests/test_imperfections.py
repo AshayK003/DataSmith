@@ -1,8 +1,6 @@
 """Tests for the Imperfection Analyzer and Injector (Phase 0, Week 2)."""
 
-import json
 import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd

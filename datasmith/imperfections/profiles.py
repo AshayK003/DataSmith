@@ -7,7 +7,7 @@ domain_profiles table.
 
 import json
 import logging
-from typing import Any, Optional
+
 
 logger = logging.getLogger(__name__)
 

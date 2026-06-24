@@ -4,7 +4,6 @@ Ponytail: numpy + scipy only. No Cleanlab, no PyOD. Stdlib stats where possible.
 Each function returns a JSON-serializable dict. No classes — just functions.
 """
 
-import json
 import logging
 import os
 from typing import Any, Optional

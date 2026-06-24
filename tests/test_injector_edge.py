@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from datasmith.imperfections.injector import inject_nulls, inject_outliers, inject_noise
 
