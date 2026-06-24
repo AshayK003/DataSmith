@@ -193,7 +193,7 @@ if resolved_schema:
     response = AgGrid(
         st.session_state["_grid_data"],
         gridOptions=grid_options,
-        update_on=["cellValueChanged"],
+        update_on=["cellValueChanged", "selectionChanged"],
         data_return_mode=DataReturnMode.AS_INPUT,
         key="schema_grid",
         height=min(60 * len(fresh_data) + 80, 400),
@@ -236,12 +236,21 @@ if resolved_schema:
             )
             st.rerun()
     with tool_c2:
-        if st.button("− Delete Selected", key="del_row_btn", use_container_width=True):
-            sel = response.selected_rows
-            if sel is not None and not sel.empty:
-                keep = st.session_state["_grid_data"].drop(sel.index, errors="ignore")
-                st.session_state["_grid_data"] = keep.reset_index(drop=True)
-                st.rerun()
+        if st.button("− Delete Selected", use_container_width=True):
+            # Read selected rows from the persisted grid component value
+            raw = st.session_state.get("schema_grid", {})
+            if isinstance(raw, dict):
+                nodes = raw.get("nodes", [])
+                sel_ids = [
+                    int(n["id"]) for n in nodes
+                    if n.get("isSelected") is True and "id" in n
+                ]
+                if sel_ids:
+                    keep = st.session_state["_grid_data"][
+                        ~st.session_state["_grid_data"].index.isin(sel_ids)
+                    ]
+                    st.session_state["_grid_data"] = keep.reset_index(drop=True)
+                    st.rerun()
     st.markdown(
         """<div class="row-tooltip">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"
