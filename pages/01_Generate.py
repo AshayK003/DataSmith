@@ -42,6 +42,10 @@ if (!window._dsKeyHandler) {
 
 if "n_rows" not in st.session_state:
     st.session_state["n_rows"] = 500
+if "_resolved_schema" not in st.session_state:
+    st.session_state["_resolved_schema"] = None
+if "_schema_source" not in st.session_state:
+    st.session_state["_schema_source"] = None
 
 # ── Init KG ──────────────────────────────────────────────────────────────
 
@@ -86,9 +90,6 @@ with browse_tab:
 
 # ── Resolve schema ───────────────────────────────────────────────────────
 
-resolved_schema = None
-schema_source = None
-
 if use_nl and nl_input:
     if not llm_available():
         st.warning(
@@ -99,9 +100,10 @@ if use_nl and nl_input:
         )
     else:
         with st.spinner("Analyzing your description..."):
-            resolved_schema = discover_schema(kg, nl_input)
-            if resolved_schema:
-                schema_source = f"Description: _{nl_input}_"
+            resolved = discover_schema(kg, nl_input)
+            if resolved:
+                st.session_state["_resolved_schema"] = resolved
+                st.session_state["_schema_source"] = f"Description: _{nl_input}_"
                 st.session_state["active_domain"] = nl_input[:40]
             else:
                 st.info(
@@ -111,11 +113,16 @@ if use_nl and nl_input:
 
 elif use_domain:
     with st.spinner("Loading domain..."):
-        resolved_schema = schema_from_kg(kg, domain_name)
-        if not resolved_schema:
-            resolved_schema = get_generic_schema(domain_name)
-        schema_source = f"Domain: **{domain_name.replace('-', ' ').title()}**"
+        resolved = schema_from_kg(kg, domain_name)
+        if not resolved:
+            resolved = get_generic_schema(domain_name)
+        st.session_state["_resolved_schema"] = resolved
+        st.session_state["_schema_source"] = f"Domain: **{domain_name.replace('-', ' ').title()}**"
         st.session_state["active_domain"] = domain_name
+
+# Read persisted schema
+resolved_schema = st.session_state["_resolved_schema"]
+schema_source = st.session_state["_schema_source"]
 
 # ── Schema editor ────────────────────────────────────────────────────────
 
@@ -170,6 +177,7 @@ if resolved_schema:
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
+        key="schema_editor",
     )
 
     # ── Generation options ───────────────────────────────────────────────
