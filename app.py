@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # ── Runtime setup — ensure writable DB ─────────────────────────────────
-_DATA_DIR = Path(os.getenv("DATASMITH_DATA", str(tempfile.gettempdir() / "datasmith")))
+_DATA_DIR = Path(os.getenv("DATASMITH_DATA", str(Path(tempfile.gettempdir()) / "datasmith")))
 _SEED_DB = Path(__file__).parent / "data" / "datasmith.db"
 
 _DATA_DIR.mkdir(parents=True, exist_ok=True)

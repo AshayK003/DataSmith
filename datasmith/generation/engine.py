@@ -42,21 +42,22 @@ def schema_from_kg(kg: KnowledgeGraph, domain_name: str) -> list[dict]:
         rows = kg.db.fetchall(
             "SELECT * FROM column_schemas WHERE dataset_id = ?", (ds.id,))
         for row in rows:
-            name = row["column_name"]
+            rd = dict(row)  # sqlite3.Row → dict for safe .get() across Python versions
+            name = rd["column_name"]
             if name not in all_columns:
                 all_columns[name] = {
                     "column_name": name,
-                    "data_type": row.get("data_type", "numeric"),
+                    "data_type": rd.get("data_type", "numeric"),
                 }
             # Merge stats from multiple datasets (keep first occurrence's stats)
             for key in ("mean", "std", "min", "maximum", "null_ratio",
                         "distribution_hint", "skewness"):
-                val = row.get(key)
+                val = rd.get(key)
                 if val is not None and all_columns[name].get(key) is None:
                     all_columns[name][key] = val
             # Map maximum → max for generator compatibility
-            if "maximum" in row and row["maximum"] is not None:
-                all_columns[name]["max"] = row["maximum"]
+            if "maximum" in rd and rd["maximum"] is not None:
+                all_columns[name]["max"] = rd["maximum"]
 
     return list(all_columns.values())
 
