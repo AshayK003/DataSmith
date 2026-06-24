@@ -3,6 +3,11 @@
 Phase 1 MVP: Domain-based generation with imperfection profiles.
 """
 
+import os
+import shutil
+import tempfile
+from pathlib import Path
+
 import streamlit as st
 
 st.set_page_config(
@@ -11,6 +16,20 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
+
+# ── Runtime setup — ensure writable DB ─────────────────────────────────
+_DATA_DIR = Path(os.getenv("DATASMITH_DATA", str(tempfile.gettempdir() / "datasmith")))
+_SEED_DB = Path(__file__).parent / "data" / "datasmith.db"
+
+_DATA_DIR.mkdir(parents=True, exist_ok=True)
+_DB_PATH = _DATA_DIR / "datasmith.db"
+
+# If a seed DB exists in the repo, copy it to the writable location
+if not _DB_PATH.exists() and _SEED_DB.exists():
+    shutil.copy2(_SEED_DB, _DB_PATH)
+
+# Set env var so engine.py picks it up
+os.environ["DATASMITH_DB_PATH"] = str(_DB_PATH)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────
 

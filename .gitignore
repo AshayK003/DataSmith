@@ -27,8 +27,12 @@ build/
 Thumbs.db
 
 # Data (generated at runtime)
-data/
+data/*
+!data/datasmith.db
+
+# SQLite DB files (except the tracked seed DB)
 *.db
+!data/datasmith.db
 *.db-journal
 *.db-wal
 .cache/

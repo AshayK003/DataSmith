@@ -23,7 +23,9 @@ st.markdown("<h1 style='text-align: center;'>⚒️ Generate Dataset</h1>",
 
 @st.cache_resource
 def _get_kg():
-    db = Database("data/datasmith.db")
+    import os
+    db_path = os.environ.get("DATASMITH_DB_PATH", "data/datasmith.db")
+    db = Database(db_path)
     return KnowledgeGraph(db)
 
 kg = _get_kg()
