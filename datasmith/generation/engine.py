@@ -25,41 +25,13 @@ def schema_from_kg(kg: KnowledgeGraph, domain_name: str) -> list[dict]:
     """Build a column schema list from the KG for a given domain.
 
     Returns list of dicts suitable for generate_from_schema().
+    Falls back to generic schema if KG has no data for this domain.
     """
-    domain = kg.get_domain_by_name(domain_name)
-    if not domain:
+    result = kg.get_column_schemas_for_domain(domain_name)
+    if result is None:
         logger.warning("Domain '%s' not in KG, returning generic schema", domain_name)
         return _generic_schema(domain_name)
-
-    datasets = kg.list_datasets(domain_id=domain.id)
-    if not datasets:
-        logger.warning("No datasets for '%s', returning generic schema", domain_name)
-        return _generic_schema(domain_name)
-
-    # Collect columns from all datasets in this domain
-    all_columns: dict[str, dict] = {}
-    for ds in datasets:
-        rows = kg.db.fetchall(
-            "SELECT * FROM column_schemas WHERE dataset_id = ?", (ds.id,))
-        for row in rows:
-            rd = dict(row)  # sqlite3.Row → dict for safe .get() across Python versions
-            name = rd["column_name"]
-            if name not in all_columns:
-                all_columns[name] = {
-                    "column_name": name,
-                    "data_type": rd.get("data_type", "numeric"),
-                }
-            # Merge stats from multiple datasets (keep first occurrence's stats)
-            for key in ("mean", "std", "min", "maximum", "null_ratio",
-                        "distribution_hint", "skewness"):
-                val = rd.get(key)
-                if val is not None and all_columns[name].get(key) is None:
-                    all_columns[name][key] = val
-            # Map maximum → max for generator compatibility
-            if "maximum" in rd and rd["maximum"] is not None:
-                all_columns[name]["max"] = rd["maximum"]
-
-    return list(all_columns.values())
+    return result
 
 
 def _generic_schema(domain_name: str) -> list[dict]:

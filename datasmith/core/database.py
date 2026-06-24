@@ -1,4 +1,4 @@
-"""Single SQLite connection manager — WAL mode, single conn, zero deps."""
+"""Single SQLite connection manager — WAL mode, single conn, context manager."""
 
 import sqlite3
 import threading
@@ -7,13 +7,29 @@ from typing import Optional
 
 
 class Database:
-    """Thread-safe SQLite connection manager. One database, one connection pool."""
+    """Thread-safe SQLite connection manager with context manager support.
+
+    Usage:
+        with Database("path/to/db.sqlite") as db:
+            db.execute("INSERT INTO ...", params)
+            # auto-commits on success, rolls back on exception
+    """
 
     def __init__(self, db_path: str | Path):
         self._path = Path(db_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()
         self._init_conn()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.commit()
+        else:
+            self.conn.rollback()
+        return False  # don't suppress the exception
 
     def _init_conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self._path), check_same_thread=False)

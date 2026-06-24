@@ -212,6 +212,49 @@ class KnowledgeGraph:
             "SELECT * FROM column_schemas WHERE dataset_id = ?", (dataset_id,))
         return [ColumnSchema(**r) for r in rows]
 
+    def get_column_schemas_for_domain(
+        self, domain_name: str
+    ) -> Optional[list[dict]]:
+        """Build a column schema list for a domain, merging across datasets.
+
+        Merges columns by name across all datasets in the domain:
+        - First dataset's column wins on stats (mean, std, etc.)
+        - 'maximum' in DB is mapped to 'max' for generator compatibility
+
+        Returns None if the domain or its datasets don't exist.
+        """
+        domain = self.get_domain_by_name(domain_name)
+        if not domain:
+            return None
+
+        datasets = self.list_datasets(domain_id=domain.id)
+        if not datasets:
+            return None
+
+        all_columns: dict[str, dict] = {}
+        for ds in datasets:
+            rows = self.db.fetchall(
+                "SELECT * FROM column_schemas WHERE dataset_id = ?", (ds.id,))
+            for row in rows:
+                rd = dict(row)
+                name = rd["column_name"]
+                if name not in all_columns:
+                    all_columns[name] = {
+                        "column_name": name,
+                        "data_type": rd.get("data_type", "numeric"),
+                    }
+                # Merge stats from multiple datasets (keep first occurrence)
+                for key in ("mean", "std", "min", "maximum", "null_ratio",
+                            "distribution_hint", "skewness"):
+                    val = rd.get(key)
+                    if val is not None and all_columns[name].get(key) is None:
+                        all_columns[name][key] = val
+                # Map maximum → max for generator compatibility
+                if "maximum" in rd and rd["maximum"] is not None:
+                    all_columns[name]["max"] = rd["maximum"]
+
+        return list(all_columns.values())
+
     # ── LLM Cache ────────────────────────────────────────────────────────
 
     def llm_cache_get(self, key: str) -> Optional[dict]:
