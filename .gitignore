@@ -1,0 +1,38 @@
+# engineering_memory.md — project-specific engineering cognition
+# Store high-value insights, patterns, anti-patterns, and heuristics
+# Updated after every meaningful task. NEVER committed.
+engineering_memory.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (generated at runtime)
+data/
+*.db
+*.db-journal
+*.db-wal
+
+# Notebooks (generated)
+*.ipynb
+
+# Logs
+*.log
