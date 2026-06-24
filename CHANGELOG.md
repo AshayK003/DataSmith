@@ -13,6 +13,16 @@
 - **`pyproject.toml`:** Added `[tool.flake8]` section (max-line-length=100, per-file-ignores for data URL lines).
 - **`_SYSTEM_PROMPT` in `discovery.py`:** Converted from triple-quoted string to concatenated strings for lint compliance without changing prompt text.
 
+## v0.3.8 (2026-06-24)
+
+### Added
+
+- **Parquet export** — new download button alongside CSV and JSON. pyarrow already ships as a transitive Streamlit dependency, so zero new install weight.
+
+### Fixed
+
+- **Version string drift** — `app.py` footer and `02_About.py` both updated from v0.3.3 → v0.3.7 to match `pyproject.toml`.
+
 ## v0.3.7 (2026-06-24)
 
 ### Removed

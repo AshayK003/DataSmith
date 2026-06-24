@@ -408,7 +408,7 @@ if "last_df" in st.session_state:
             safe.loc[mask, col] = "'" + safe.loc[mask, col].astype(str)
         return safe
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         csv_buffer = io.BytesIO()
         _sanitize_csv_formulas(df).to_csv(csv_buffer, index=False)
@@ -430,6 +430,18 @@ if "last_df" in st.session_state:
             data=json_buffer,
             file_name=f"datasmith_{st.session_state['active_domain']}_{st.session_state['n_rows']}rows.json",
             mime="application/json",
+            use_container_width=True,
+        )
+
+    with col3:
+        parquet_buffer = io.BytesIO()
+        df.to_parquet(parquet_buffer, index=False)
+        parquet_buffer.seek(0)
+        st.download_button(
+            "Download Parquet",
+            data=parquet_buffer,
+            file_name=f"datasmith_{st.session_state['active_domain']}_{st.session_state['n_rows']}rows.parquet",
+            mime="application/octet-stream",
             use_container_width=True,
         )
 
