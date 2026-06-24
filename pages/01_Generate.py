@@ -205,9 +205,27 @@ if resolved_schema:
         st.session_state["_grid_data"] = response.data
 
     # ── Add / Delete rows ─────────────────────────────────────────────
-    c1, c2, c3 = st.columns([1, 1, 4])
-    with c1:
-        if st.button("+ Add Row", use_container_width=True):
+    st.markdown("""<style>
+    /* Delete Selected button → red */
+    div[data-testid="column"]:nth-child(2) button {
+        background-color: #dc2626 !important;
+        color: #fff !important;
+        border-color: #dc2626 !important;
+    }
+    div[data-testid="column"]:nth-child(2) button:hover {
+        background-color: #b91c1c !important;
+        border-color: #b91c1c !important;
+    }
+    div[data-testid="column"]:nth-child(2) button:active {
+        background-color: #991b1b !important;
+    }
+    /* Tooltip row below toolbar */
+    .row-tooltip { font-size: 0.75rem; color: #888; margin: -8px 0 8px 16px; }
+    </style>""", unsafe_allow_html=True)
+
+    tool_c1, tool_c2 = st.columns(2)
+    with tool_c1:
+        if st.button("+ Add Row", key="add_row_btn", use_container_width=True):
             new_row = pd.DataFrame([{
                 "column_name": "new_col",
                 "data_type": "text",
@@ -217,15 +235,23 @@ if resolved_schema:
                 [st.session_state["_grid_data"], new_row], ignore_index=True
             )
             st.rerun()
-    with c2:
-        if st.button("− Delete Selected", use_container_width=True):
+    with tool_c2:
+        if st.button("− Delete Selected", key="del_row_btn", use_container_width=True):
             sel = response.selected_rows
             if sel is not None and not sel.empty:
                 keep = st.session_state["_grid_data"].drop(sel.index, errors="ignore")
                 st.session_state["_grid_data"] = keep.reset_index(drop=True)
                 st.rerun()
-    with c3:
-        st.caption("Select rows via checkboxes, then click Delete Selected.")
+    st.markdown(
+        """<div class="row-tooltip">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        Click a row number to select it, then Delete Selected removes it
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
     # ── Build edited schema from grid data ────────────────────────────
     grid_df = st.session_state["_grid_data"]
