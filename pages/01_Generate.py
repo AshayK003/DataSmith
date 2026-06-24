@@ -4,6 +4,8 @@ Natural language -> schema -> editor -> generate -> preview -> download.
 """
 import io
 import os
+import re
+import time
 
 import streamlit as st
 
@@ -387,10 +389,19 @@ if "last_df" in st.session_state:
         st.dataframe(df.describe(include="all").round(2), use_container_width=True)
 
     st.markdown("## Export")
+
+    def _sanitize_csv_formulas(frame: pd.DataFrame) -> pd.DataFrame:
+        """Prefix cells starting with =, +, -, @ with ' to prevent formula injection."""
+        safe = frame.copy()
+        for col in safe.select_dtypes(include=["object", "string"]).columns:
+            mask = safe[col].astype(str).str.match(r'^[=+\-@]')
+            safe.loc[mask, col] = "'" + safe.loc[mask, col].astype(str)
+        return safe
+
     col1, col2 = st.columns(2)
     with col1:
         csv_buffer = io.BytesIO()
-        df.to_csv(csv_buffer, index=False)
+        _sanitize_csv_formulas(df).to_csv(csv_buffer, index=False)
         csv_buffer.seek(0)
         st.download_button(
             "Download CSV",
