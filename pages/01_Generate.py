@@ -146,53 +146,78 @@ if resolved_schema:
             st.caption(" | ".join(meta))
     st.caption("Edit column names, types, and parameters. Add or remove rows.")
 
-    # Build fresh data from resolved schema
-    fresh_data = []
-    for col in resolved_schema:
-        dtype = col.get("data_type", "numeric").lower()
-        if dtype in ("numeric", "integer"):
-            display_type = "numeric"
-        elif dtype == "boolean":
-            display_type = "boolean"
-        elif dtype == "datetime":
-            display_type = "datetime"
-        else:
-            display_type = "text"
+    # ── Column schema versioning ──────────────────────────────────────
+    # Bump version when a new schema is loaded → all widget keys change
+    # → old session state discarded → widgets show new defaults.
+    CUR_SCHEMA_TAG = str(len(resolved_schema)) + "$" + str(hash(tuple(
+        c.get("column_name", "") + c.get("data_type", "") for c in resolved_schema
+    )))
+    if st.session_state.get("_col_schema_tag") != CUR_SCHEMA_TAG:
+        st.session_state["_col_schema_ver"] = st.session_state.get("_col_schema_ver", 0) + 1
+        st.session_state["_col_schema_tag"] = CUR_SCHEMA_TAG
+        st.session_state["_col_count"] = len(resolved_schema)
 
-        fresh_data.append({
-            "column_name": col.get("column_name", "col"),
-            "data_type": display_type,
-            "mean": col.get("mean", 50.0),
-            "std": col.get("std", 20.0),
-            "min": col.get("min", 0.0) if display_type == "numeric" else 0.0,
-            "max": col.get("max", 100.0) if display_type == "numeric" else 100.0,
-        })
+    ver = st.session_state["_col_schema_ver"]
+    col_count = st.session_state["_col_count"]
 
-    # Persist editor data in session state — only rebuild from schema
-    # when the schema version bumps (new discovery / new domain).
-    if st.session_state.get("_editor_schema_ver", -1) != st.session_state.get("_resolved_schema_ver", -1):
-        st.session_state["_editor_data"] = fresh_data
-        st.session_state["_editor_schema_ver"] = st.session_state["_resolved_schema_ver"]
+    # ── Render column cards ──────────────────────────────────────────
+    for i in range(col_count):
+        col_def = resolved_schema[i] if i < len(resolved_schema) else {}
+        dtype_raw = col_def.get("data_type", "text").lower()
+        display_type = "numeric" if dtype_raw in ("numeric", "integer") else dtype_raw
 
-    edited = st.data_editor(
-        st.session_state.get("_editor_data", fresh_data),
-        column_config={
-            "column_name": st.column_config.TextColumn("Column Name", width="medium"),
-            "data_type": st.column_config.SelectboxColumn(
-                "Type", options=["text", "numeric", "boolean", "datetime"], width="small"),
-            "mean": st.column_config.NumberColumn("Mean", format="%.2f", width="small"),
-            "std": st.column_config.NumberColumn("Std", format="%.2f", width="small"),
-            "min": st.column_config.NumberColumn("Min", format="%.2f", width="small"),
-            "max": st.column_config.NumberColumn("Max", format="%.2f", width="small"),
-        },
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        key="schema_editor",
-    )
+        with st.container(border=True):
+            st.text_input(
+                "Column Name",
+                value=col_def.get("column_name", f"col_{i+1}"),
+                key=f"_col_{ver}_{i}_name",
+            )
+            col_type = st.selectbox(
+                "Type",
+                options=["text", "numeric", "boolean", "datetime"],
+                index=["text", "numeric", "boolean", "datetime"].index(display_type)
+                if display_type in ("text", "numeric", "boolean", "datetime") else 0,
+                key=f"_col_{ver}_{i}_type",
+            )
 
-    # Persist user's edits back
-    st.session_state["_editor_data"] = edited
+            if col_type == "numeric":
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.number_input("Mean", value=col_def.get("mean", 50.0),
+                                    key=f"_col_{ver}_{i}_mean")
+                    st.number_input("Min", value=col_def.get("min", 0.0),
+                                    key=f"_col_{ver}_{i}_min")
+                with c2:
+                    st.number_input("Std", value=col_def.get("std", 20.0),
+                                    key=f"_col_{ver}_{i}_std")
+                    st.number_input("Max", value=col_def.get("max", 100.0),
+                                    key=f"_col_{ver}_{i}_max")
+
+    # ── Add / Remove rows ────────────────────────────────────────────
+    c1, c2, _ = st.columns([1, 1, 4])
+    with c1:
+        if st.button("+ Add Column", use_container_width=True):
+            st.session_state["_col_count"] += 1
+            st.rerun()
+    with c2:
+        if st.button("− Remove Last", use_container_width=True) and col_count > 0:
+            st.session_state["_col_count"] -= 1
+            st.rerun()
+
+    # ── Build edited schema from widget values ────────────────────────
+    edited = []
+    for i in range(st.session_state["_col_count"]):
+        col_type = st.session_state.get(f"_col_{ver}_{i}_type", "text")
+        entry = {
+            "column_name": st.session_state.get(f"_col_{ver}_{i}_name", f"col_{i+1}"),
+            "data_type": col_type,
+        }
+        if col_type == "numeric":
+            entry["mean"] = st.session_state.get(f"_col_{ver}_{i}_mean", 50.0)
+            entry["std"] = st.session_state.get(f"_col_{ver}_{i}_std", 20.0)
+            entry["min"] = st.session_state.get(f"_col_{ver}_{i}_min", 0.0)
+            entry["max"] = st.session_state.get(f"_col_{ver}_{i}_max", 100.0)
+        edited.append(entry)
 
     # ── Generation options ───────────────────────────────────────────────
 
