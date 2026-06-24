@@ -1,20 +1,11 @@
-"""About Page — project info and credits."""
-
+"""About Page -- project info and credits."""
 import streamlit as st
 
-_INFO_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" '
-    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-    'stroke-linejoin="round">'
-    '<circle cx="12" cy="12" r="10"/>'
-    '<path d="M12 16v-4"/>'
-    '<path d="M12 8h.01"/>'
-    "</svg>"
-)
+from datasmith.ui import icons
 
 st.set_page_config(page_title="About — DataSmith", layout="centered")
 
-st.markdown(f"<h1 style='text-align: center;'>{_INFO_SVG} About DataSmith</h1>",
+st.markdown(f"<h1 style='text-align:center;'>{icons.INFO} About DataSmith</h1>",
             unsafe_allow_html=True)
 
 st.markdown(
@@ -29,11 +20,11 @@ st.divider()
 
 st.markdown("### Key Features")
 st.markdown(
-    "- **Domain-tuned schemas** — 10 domains sourced from Kaggle, UCI, and HuggingFace\n"
-    "- **Realistic imperfections** — nulls, outliers, and noise patterns extracted from real datasets\n"
-    "- **Customizable** — edit column names, types, and parameters before generation\n"
-    "- **Lightweight** — pure Python, no GPU, no cloud, no training time\n"
-    "- **Open Source** — AGPL v3 licensed"
+    "- **Domain-tuned schemas** -- 10 domains sourced from Kaggle, UCI, and HuggingFace\n"
+    "- **Realistic imperfections** -- nulls, outliers, and noise patterns extracted from real datasets\n"
+    "- **Customizable** -- edit column names, types, and parameters before generation\n"
+    "- **Lightweight** -- pure Python, no GPU, no cloud, no training time\n"
+    "- **Open Source** -- AGPL v3 licensed"
 )
 
 st.divider()
@@ -50,8 +41,8 @@ with col3:
 st.divider()
 
 st.markdown(
-    "<p style='text-align: center; color: #888;'>"
-    "DataSmith v0.2.0 — Built by Ashay Kushwaha<br>"
-    "License: AGPL v3 — <a href='https://github.com/AshayK003/DataSmith'>GitHub</a></p>",
+    "<p style='text-align: center; color: var(--ds-text-muted);'>"
+    "DataSmith v0.3.1 -- Built by Ashay Kushwaha<br>"
+    "License: AGPL v3 -- <a href='https://github.com/AshayK003/DataSmith'>GitHub</a></p>",
     unsafe_allow_html=True,
 )

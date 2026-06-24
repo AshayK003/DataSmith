@@ -25,14 +25,14 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 
 ## Features
 
-- **10 domain profiles** — e-commerce, healthcare, finance, education, social-media, IoT, real-estate, transportation, energy, manufacturing
-- **Realistic imperfections** — nulls (MCAR/MAR/MNAR), outliers (IQR-based), noise (rounding), distribution-skew patterns — all extracted from real datasets
-- **Schema Knowledge Graph** — real dataset schemas crawled from Kaggle, HuggingFace, and UCI Archive, stored in SQLite with FTS5 search
-- **No training needed** — data generated from statistical metadata using numpy/scipy. Instant generation, zero GPU, zero API calls
-- **Streamlit UI** — domain selector, editable schema table, preview, CSV/JSON export
-- **Lightweight** — pure Python, 8 core deps, no PyTorch/SDV required
-- **Lucide SVGs** — clean, MIT-licensed icons throughout the UI
-- **74+ tests** — run via `uv run pytest`
+- **10 domain profiles** -- e-commerce, healthcare, finance, education, social-media, IoT, real-estate, transportation, energy, manufacturing
+- **Realistic imperfections** -- nulls (MCAR/MAR/MNAR), outliers (IQR-based), noise (rounding), distribution-skew patterns -- all extracted from real datasets
+- **Schema Knowledge Graph** -- real dataset schemas crawled from Kaggle, HuggingFace, and UCI Archive, stored in SQLite with FTS5 search
+- **No training needed** -- data generated from statistical metadata using numpy/scipy. Instant generation, zero GPU, zero API calls
+- **Streamlit UI** -- themed with CSS variables, component overrides, responsive layout, keyboard shortcuts
+- **Lightweight** -- pure Python, 8 core deps, no PyTorch/SDV required
+- **Lucide SVGs** -- shared icon module, MIT-licensed, consistent across all pages
+- **74+ tests** -- run via `uv run pytest`
 
 ## Architecture
 
@@ -80,9 +80,11 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 │   ├── analyzer.py          # Statistical analysis of real data
 │   ├── profiles.py          # Domain imperfection profiles
 │   └── injector.py          # Apply imperfections to clean data
-└── generation/
-    ├── generator.py         # numpy/scipy data generation
-    └── engine.py            # Pipeline orchestrator
+├── generation/
+│   ├── generator.py         # numpy/scipy data generation
+│   └── engine.py            # Pipeline orchestrator
+└── ui/
+    └── icons.py             # Shared Lucide SVG icons
 
 📦 pages/
 ├── 01_Generate.py           # Main generation UI
@@ -95,6 +97,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 
 📜 tests/                    # 74+ tests, run via: uv run pytest
 📜 app.py                    # Streamlit entry point
+📜 .streamlit/config.toml    # Theme + client config
 ```
 
 ## Development

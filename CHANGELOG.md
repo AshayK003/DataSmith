@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.3.2 (2026-06-25)
+
+### Added
+- **`.streamlit/config.toml`** -- theme tokens, hides Streamlit chrome (hamburger, toolbar, header).
+- **Shared icon module** (`datasmith/ui/icons.py`) -- all Lucide SVGs in one place. No more duplicated SVGs across pages.
+- **CSS injection** -- design tokens (color, radius, spacing), component overrides (buttons, inputs, tabs, expanders, metrics), responsive rules, keyboard focus ring. Single `@st.cache_resource` block.
+- **Form validation** -- min/max range check and negative std check before generation. Shows actionable error per column.
+- **Keyboard shortcut** -- Ctrl+Enter triggers the primary Generate button.
+- **Empty state guidance** -- domain info shows dataset count or "No datasets crawled yet" instead of blank.
+
+### Fixed
+- **Version strings** -- sidebar and About page updated from v0.2.0 to v0.3.1.
+- **Accessibility** -- text input now has visible label + help tooltip instead of collapsed label. Tab labels use plain text (no emojis). Heading hierarchy uses h2 for sections consistently.
+- **Preview spinner removed** -- `st.spinner("")` wrapping instant in-memory dataframe eliminated.
+- **Imperfection Report conditional** -- only shown when imperfections were actually injected. Collapsed by default.
+- **Regenerate spacing** -- added margin before Regenerate button so it doesn't orphan below the divider.
+
+### Changed
+- **Emojis removed** from all buttons and tab labels. Icons now use Lucide SVGs via the shared module.
+- **Quick Start section removed** from home page -- redundant with sidebar nav and Generate page.
+- **Feature cards** on home page use `st.container(border=True)` with centered Lucide icons instead of raw HTML divs.
+- **Em-dashes replaced** with double hyphens throughout About page.
+
 ## v0.3.1 (2026-06-25)
 
 ### Fixed
