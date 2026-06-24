@@ -165,7 +165,7 @@ uv run pytest          # Run all tests
 ### Linting
 
 ```bash
-uv run flake8 datasmith/ tests/ --max-line-length=100
+uv run flake8 datasmith/ tests/ --max-line-length=100 --exclude=.venv
 ```
 
 ---

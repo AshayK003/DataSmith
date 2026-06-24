@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.8 (2026-06-24)
+
+### Fixed
+
+- **GitHub Actions CI:** `seed-crawl` job now has `permissions: contents: write` for git push. Git config (user.name/user.email) set in a step *before* the crawl script runs to prevent "fatal: empty ident name" on scheduled runs.
+- **Linting:** Fixed all 42 flake8 errors — removed 6 unused imports, 3 dead variables, fixed 1 undefined name (`pd`), wrapped 20 long lines with `# noqa: E501` or string concatenation, cleaned trailing whitespace and EOF newlines.
+- **`analyzer.py`:** Added missing `import pandas as pd` (was silently crashing on F821).
+
+### Changed
+
+- **`pyproject.toml`:** Added `[tool.flake8]` section (max-line-length=100, per-file-ignores for data URL lines).
+- **`_SYSTEM_PROMPT` in `discovery.py`:** Converted from triple-quoted string to concatenated strings for lint compliance without changing prompt text.
+
 ## v0.3.7 (2026-06-24)
 
 ### Removed
