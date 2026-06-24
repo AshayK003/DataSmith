@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.3.3 (2026-06-24)
+
+### Fixed
+- **`generator.py: if lo > 0`** — lognormal min-offset branch only activated when `lo > 0`, silently ignoring negative min values. Changed to `if lo is not None`.
+- **`profiles.py: falsy-zero skip`** — `if current and incoming` skipped null_pct averaging when either value was exactly 0. Changed to `is not None` check.
+- **`injector.py: NaN probability masks`** — constant columns produced NaN probs in MAR/MNAR paths, causing `rng.random(n) < NaN` to silently skip injection. Added `np.nan_to_num(..., nan=0.0)`.
+- **`analyzer.py: reindex_like misalignment`** — weekend-concentration check used `dropna`-subset index for outlier mask while aligning to full DataFrame index. Replaced with properly initialized `pd.Series(False, index=df.index)`.
+- **`knowledge_graph.py: dead maximum→max mapping`** — key tuple used `"maximum"` but DB column is `max`. The explicit mapping block was dead code, silently dropping `max` values from the KG into the generator. Changed key to `"max"` in the generic loop.
+- **`injector.py: integer columns skipped`** — `inject_outliers` and `inject_noise` rejected integer columns entirely. Now convert to float64 (same pattern as `inject_nulls`).
+
+### Changed
+- **Sidebar removed** — version caption (`DataSmith v0.3.1`) moved from sidebar to main dashboard footer, next to the support badge.
+- **`components.py` header nav** — now rendered on all pages (Home, Generate, About) via shared `render_header()`.
+
 ## v0.3.2 (2026-06-25)
 
 ### Added

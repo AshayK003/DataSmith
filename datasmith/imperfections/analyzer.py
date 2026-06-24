@@ -124,10 +124,11 @@ def analyze_outliers(df, iqr_multiplier: float = 1.5) -> dict[str, dict]:
             try:
                 dates = pd.to_datetime(df[date_cols[0]], errors="coerce")
                 weekend_mask = dates.dt.dayofweek.isin([5, 6])
-                outlier_mask = series.isin(outliers)
-                both_mask = weekend_mask & outlier_mask.reindex_like(weekend_mask)
+                outlier_mask = pd.Series(False, index=df.index)
+                outlier_mask.loc[series.index] = series.isin(outliers)
+                both_mask = weekend_mask & outlier_mask
                 wknd_outliers = both_mask.sum()
-                total_outliers = outlier_mask.reindex_like(weekend_mask).sum()
+                total_outliers = outlier_mask.sum()
                 if total_outliers > 0:
                     results[col]["weekend_concentration"] = float(wknd_outliers / total_outliers)
             except Exception:

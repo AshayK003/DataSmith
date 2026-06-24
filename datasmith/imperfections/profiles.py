@@ -248,7 +248,7 @@ def merge_profile(existing: dict, analysis: dict) -> dict:
                 # Average null_pct if both exist
                 current = merged["null_patterns"][col].get("null_pct", 0)
                 incoming = info.get("null_pct", 0)
-                if current and incoming:
+                if current is not None and incoming is not None:
                     merged["null_patterns"][col]["null_pct"] = round((current + incoming) / 2, 1)
 
     # Merge outlier patterns

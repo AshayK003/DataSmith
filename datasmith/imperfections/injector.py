@@ -67,10 +67,11 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
                     if np.issubdtype(df[related_col].dtype, np.number):
                         series = df[related_col].fillna(df[related_col].median())
                         # Higher values → more likely null
-                        normalized = (series - series.min()) / max(series.max() - series.min(), 1)
+                        spread = max(series.max() - series.min(), 1)
+                        normalized = (series - series.min()) / spread
                         # Scale prob: original null_pct * normalized_rank
                         probs = normalized * null_pct * 2
-                        probs = np.clip(probs, 0, 1.0)
+                        probs = np.clip(np.nan_to_num(probs, nan=0.0), 0, 1.0)
                         mask = rng.random(n) < probs
                     else:
                         mask = rng.random(n) < null_pct
@@ -86,7 +87,8 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
                     series = df[col].fillna(df[col].median())
                     z_scores = np.abs((series - series.mean()) / max(series.std(), 1e-6))
                     # Standardize z-scores to [0, 1] and scale by null_pct
-                    probs = np.clip(z_scores / max(z_scores.max(), 1e-6) * null_pct * 3, 0, 1.0)
+                    scaled = z_scores / max(z_scores.max(), 1e-6) * null_pct * 3
+                    probs = np.clip(np.nan_to_num(scaled, nan=0.0), 0, 1.0)
                     mask = rng.random(n) < probs
                 except Exception:
                     mask = rng.random(n) < null_pct
@@ -115,7 +117,10 @@ def inject_outliers(df, profile: dict, rng: Optional[np.random.Generator] = None
         if col not in df.columns:
             continue
         if not np.issubdtype(df[col].dtype, np.floating):
-            continue
+            if np.issubdtype(df[col].dtype, np.integer):
+                df[col] = df[col].astype(np.float64)
+            else:
+                continue
 
         outlier_pct = pattern.get("outlier_pct", 0) / 100.0
         if outlier_pct <= 0:
@@ -162,7 +167,10 @@ def inject_noise(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         if col not in df.columns:
             continue
         if not np.issubdtype(df[col].dtype, np.floating):
-            continue
+            if np.issubdtype(df[col].dtype, np.integer):
+                df[col] = df[col].astype(np.float64)
+            else:
+                continue
 
         rounding_pct = pattern.get("rounding_pct", 0)
         precision = pattern.get("precision", 0.01)

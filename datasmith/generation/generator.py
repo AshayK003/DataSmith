@@ -52,11 +52,11 @@ def _sample_lognormal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarra
     mu = np.log(mean ** 2 / np.sqrt(std ** 2 + mean ** 2))
     sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
     data = rng.lognormal(mu, sigma, n)
-    lo = stat.get("min", 0.0)
+    lo = stat.get("min")
     hi = stat.get("max")
     scale = mean / np.mean(data) if np.mean(data) > 0 else 1.0
     data = data * scale
-    if lo > 0:
+    if lo is not None:
         data = data + lo
     if hi is not None:
         data = np.clip(data, lo, hi)

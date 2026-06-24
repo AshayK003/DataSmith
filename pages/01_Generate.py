@@ -14,8 +14,11 @@ from datasmith.llm.discovery import discover_schema
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.generation.engine import generate_dataset, schema_from_kg, _generic_schema
 from datasmith.ui import icons
+from datasmith.ui.components import render_header
 
 st.set_page_config(page_title="Generate — DataSmith", layout="centered")
+
+render_header("generate")
 
 st.markdown(f"<h1 style='text-align:center;'>{icons.SPARKLES} Generate Dataset</h1>",
             unsafe_allow_html=True)

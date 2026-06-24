@@ -7,6 +7,7 @@ from pathlib import Path
 import streamlit as st
 
 from datasmith.ui import icons
+from datasmith.ui.components import render_header
 
 # ── CSS injection ────────────────────────────────────────────────────────
 
@@ -83,6 +84,53 @@ header[data-testid="stHeader"] {visibility: hidden;}
     border-radius: var(--ds-radius) !important;
 }
 
+/* Header bar */
+.ds-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--ds-border);
+}
+.ds-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ds-text);
+    text-decoration: none;
+}
+.ds-header-nav {
+    display: flex;
+    gap: 0.25rem;
+}
+.ds-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--ds-radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ds-text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.ds-nav-btn:hover {
+    color: var(--ds-text);
+    background: var(--ds-surface);
+    border-color: var(--ds-border);
+}
+.ds-nav-btn.active {
+    color: var(--ds-accent);
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
 /* Section spacing */
 section + section { margin-top: 1.5rem; }
 
@@ -92,6 +140,8 @@ section + section { margin-top: 1.5rem; }
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
+    .ds-header { flex-direction: column; gap: 0.75rem; }
+    .ds-header-nav { width: 100%; justify-content: center; }
     .stButton button { font-size: 0.85rem; }
     [data-testid="stMetric"] { padding: 0.75rem; }
 }
@@ -108,9 +158,9 @@ section + section { margin-top: 1.5rem; }
 
 st.set_page_config(
     page_title="DataSmith",
-    page_icon="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/></svg>",
+    page_icon="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/></svg>",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(_load_css(), unsafe_allow_html=True)
@@ -128,21 +178,9 @@ if not _DB_PATH.exists() and _SEED_DB.exists():
 
 os.environ["DATASMITH_DB_PATH"] = str(_DB_PATH)
 
-# ── Sidebar ──────────────────────────────────────────────────────────────
+# ── Header bar (brand + nav) ────────────────────────────────────────────
 
-with st.sidebar:
-    st.markdown(
-        f'<h3 style="text-align:center;margin-bottom:0;">{icons.BRAND} DataSmith</h3>'
-        '<p style="text-align:center;color:var(--ds-text-muted);font-size:0.85rem;margin-top:0.25rem;">'
-        "Synthetic Dataset Generator</p>",
-        unsafe_allow_html=True,
-    )
-    st.divider()
-    st.page_link("app.py", label="Home", icon="🏠")
-    st.page_link("pages/01_Generate.py", label="Generate", icon="⚡")
-    st.page_link("pages/02_About.py", label="About", icon="ℹ️")
-    st.divider()
-    st.caption("DataSmith v0.3.1 — AGPL v3")
+render_header("home")
 
 # ── Main content ─────────────────────────────────────────────────────────
 
@@ -199,6 +237,8 @@ with col_b:
         '<img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" '
         'style="height:32px;object-fit:contain;"/></a>'
         '<p style="color:var(--ds-text-muted);font-size:0.8em;margin-top:8px;">'
-        "If DataSmith helps your project, consider supporting</p></div>",
+        "If DataSmith helps your project, consider supporting</p></div>"
+        '<p style="text-align:center;color:var(--ds-text-muted);font-size:0.75em;margin-top:12px;">'
+        "DataSmith v0.3.1</p>",
         unsafe_allow_html=True,
     )

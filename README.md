@@ -32,7 +32,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 - **Streamlit UI** -- themed with CSS variables, component overrides, responsive layout, keyboard shortcuts
 - **Lightweight** -- pure Python, 8 core deps, no PyTorch/SDV required
 - **Lucide SVGs** -- shared icon module, MIT-licensed, consistent across all pages
-- **74+ tests** -- run via `uv run pytest`
+- **74 tests** -- run via `uv run pytest`, all passing
 
 ## Architecture
 

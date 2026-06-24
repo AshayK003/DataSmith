@@ -2,8 +2,11 @@
 import streamlit as st
 
 from datasmith.ui import icons
+from datasmith.ui.components import render_header
 
 st.set_page_config(page_title="About — DataSmith", layout="centered")
+
+render_header("about")
 
 st.markdown(f"<h1 style='text-align:center;'>{icons.INFO} About DataSmith</h1>",
             unsafe_allow_html=True)

@@ -239,14 +239,11 @@ class KnowledgeGraph:
                         "data_type": rd.get("data_type", "numeric"),
                     }
                 # Merge stats from multiple datasets (keep first occurrence)
-                for key in ("mean", "std", "min", "maximum", "null_ratio",
+                for key in ("mean", "std", "min", "max", "null_ratio",
                             "distribution_hint", "skewness"):
                     val = rd.get(key)
                     if val is not None and all_columns[name].get(key) is None:
                         all_columns[name][key] = val
-                # Map maximum → max for generator compatibility
-                if "maximum" in rd and rd["maximum"] is not None:
-                    all_columns[name]["max"] = rd["maximum"]
 
         return list(all_columns.values())
 
