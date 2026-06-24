@@ -38,50 +38,58 @@ SEED_DOMAINS = {
 }
 
 # Datasets keyed by domain. Each entry: (source, identifier, label)
-# source: "kaggle" | "huggingface" | "url"
+# source: "kaggle" | "url"
+#   Kaggle needs auth (set KAGGLE_USERNAME + KAGGLE_KEY env vars)
+#   URL sources are direct CSV/Excel/ZIP links (no auth needed)
+# HuggingFace sources temporarily disabled — most free-tier datasets
+# use Parquet/Arrow, not CSV. Will re-enable when CSV pipeline is ready.
 SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     "e-commerce": [
         ("kaggle", "olistbr/brazilian-ecommerce", "Brazilian E-Commerce"),
-        ("huggingface", "sasha/ecommerce-behavior-data", "E-Commerce Behavior"),
         ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv", "Candy Rankings"),
     ],
     "healthcare": [
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure Clinical"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", "Wine Quality Red"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", "Wine Quality White"),
         ("kaggle", "mathchi/diabetes-data-set", "Diabetes Dataset"),
     ],
     "finance": [
         ("kaggle", "borismk/credit-card-transactions-dataset", "Credit Card Transactions"),
-        ("huggingface", "sasha/financial-dataset", "Financial Dataset"),
-        ("url", "https://raw.githubusercontent.com/curran/data/gh-pages/worldbank/worldbank-data/worldbank.json", "World Bank Data"),
+        ("url", "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv", "CO2 Emissions (OWID)"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv", "Airline Safety"),
     ],
     "education": [
         ("kaggle", "spsci/academic-data", "Academic Data"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", "Wine Quality Red"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/grad-students.csv", "College Graduate Students"),
+        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv", "COVID-19 Latest (OWID)"),
     ],
     "social-media": [
         ("kaggle", "benjaminawd/youtube-trending-stats", "YouTube Trending"),
-        ("huggingface", "sasha/social-media-dataset", "Social Media Dataset"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/masculinity-survey/masculinity-survey.csv", "Masculinity Survey"),
     ],
     "iot-sensors": [
         ("kaggle", "uciml/electric-power-consumption-data-set", "Power Consumption"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", "Wine Quality White"),
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/airline-passengers.csv", "Airline Passengers"),
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv", "Daily Min Temperatures"),
     ],
     "real-estate": [
         ("kaggle", "ahmedshahriarsakib/usa-real-estate-dataset", "USA Real Estate"),
-        ("huggingface", "sasha/real-estate-dataset", "Real Estate Dataset"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/hate-crimes/hate_crimes.csv", "Hate Crimes by Metro"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/bad-drivers/bad-drivers.csv", "Bad Drivers"),
     ],
     "transportation": [
         ("kaggle", "dansbecker/nyc-taxi-trip-duration", "NYC Taxi Trips"),
-        ("huggingface", "sasha/transportation-dataset", "Transportation Dataset"),
+        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv", "Vaccinations Data"),
     ],
     "energy": [
-        ("kaggle", "robikscube/hourly-energy-consumption", "Hourly Energy"),
-        ("huggingface", "sasha/energy-dataset", "Energy Dataset"),
+        ("kaggle", "robikscube/hourly-energy-consumption", "Hourly Energy Consumption"),
+        ("url", "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv", "OWID Energy Data"),
     ],
     "manufacturing": [
-        ("kaggle", "rabieelkharoua/manufacturing-dataset", "Manufacturing"),
-        ("huggingface", "sasha/manufacturing-dataset", "Manufacturing Data"),
+        ("kaggle", "rabieelkharoua/manufacturing-dataset", "Manufacturing Quality"),
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/shampoo.csv", "Shampoo Sales"),
     ],
 }
 
@@ -148,6 +156,42 @@ def extract_schema(file_path: str, dataset_id: int) -> list[ColumnSchema]:
     return columns
 
 
+def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
+    """Read a CSV with automatic delimiter detection."""
+    import pandas as pd
+    import csv
+    
+    # Try comma first (fast path)
+    try:
+        df = pd.read_csv(file_path, nrows=nrows, encoding="utf-8")
+        if len(df.columns) > 1:
+            return df
+    except Exception:
+        pass
+    
+    # Try semicolon (common in UCI datasets)
+    try:
+        df = pd.read_csv(file_path, nrows=nrows, sep=";", encoding="utf-8")
+        if len(df.columns) > 1:
+            return df
+    except Exception:
+        pass
+    
+    # Try Python CSV Sniffer
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            sample = f.read(4096)
+            dialect = csv.Sniffer().sniff(sample)
+            f.seek(0)
+            df = pd.read_csv(f, nrows=nrows, sep=dialect.delimiter)
+            return df
+    except Exception:
+        pass
+    
+    # Final fallback
+    return pd.read_csv(file_path, nrows=nrows, encoding="utf-8")
+
+
 def scan_data_quality(file_path: str,
                       columns: list[ColumnSchema]) -> list[ColumnSchema]:
     """Scan actual data to fill null_ratio, distinct_count, stats for numeric cols."""
@@ -155,7 +199,7 @@ def scan_data_quality(file_path: str,
     import numpy as np
 
     try:
-        df = pd.read_csv(file_path, nrows=10000)
+        df = _read_csv_safe(file_path)
     except Exception:
         return columns
 
@@ -191,7 +235,7 @@ def _store_schema(kg: KnowledgeGraph, dataset: DatasetSchema,
     # Update metadata
     try:
         import pandas as pd
-        df = pd.read_csv(csv_path, nrows=10000)
+        df = _read_csv_safe(csv_path)
         kg.db.execute(
             "UPDATE dataset_schemas SET row_count=?, column_count=? WHERE id=?",
             (len(df), len(df.columns), dataset_id),
