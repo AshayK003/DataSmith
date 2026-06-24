@@ -146,77 +146,100 @@ if resolved_schema:
             st.caption(" | ".join(meta))
     st.caption("Edit column names, types, and parameters. Add or remove rows.")
 
-    # ── Column schema versioning ──────────────────────────────────────
-    # Bump version when a new schema is loaded → all widget keys change
-    # → old session state discarded → widgets show new defaults.
-    CUR_SCHEMA_TAG = str(len(resolved_schema)) + "$" + str(hash(tuple(
+    import pandas as pd
+    from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode
+
+    # ── Build grid data from schema ───────────────────────────────────
+    fresh_data = []
+    for col in resolved_schema:
+        dtype = col.get("data_type", "text").lower()
+        display = "numeric" if dtype in ("numeric", "integer") else dtype
+        fresh_data.append({
+            "column_name": col.get("column_name", "col"),
+            "data_type": display,
+            "mean": col.get("mean", 50.0) if display == "numeric" else None,
+            "std": col.get("std", 20.0) if display == "numeric" else None,
+            "min": col.get("min", 0.0) if display == "numeric" else None,
+            "max": col.get("max", 100.0) if display == "numeric" else None,
+        })
+
+    # ── Schema versioning — reset grid when schema changes ────────────
+    CUR_TAG = str(len(resolved_schema)) + "$" + str(hash(tuple(
         c.get("column_name", "") + c.get("data_type", "") for c in resolved_schema
     )))
-    if st.session_state.get("_col_schema_tag") != CUR_SCHEMA_TAG:
-        st.session_state["_col_schema_ver"] = st.session_state.get("_col_schema_ver", 0) + 1
-        st.session_state["_col_schema_tag"] = CUR_SCHEMA_TAG
-        st.session_state["_col_count"] = len(resolved_schema)
+    if st.session_state.get("_grid_schema_tag") != CUR_TAG:
+        st.session_state["_grid_data"] = pd.DataFrame(fresh_data)
+        st.session_state["_grid_schema_tag"] = CUR_TAG
 
-    ver = st.session_state["_col_schema_ver"]
-    col_count = st.session_state["_col_count"]
+    # ── AG Grid ───────────────────────────────────────────────────────
+    gb = GridOptionsBuilder.from_dataframe(st.session_state["_grid_data"])
+    gb.configure_default_column(
+        editable=True, filterable=True, sortable=True, resizable=True
+    )
+    # Type column → dropdown cell editor
+    gb.configure_column(
+        "data_type",
+        header_name="Type",
+        cellEditor="agSelectCellEditor",
+        cellEditorParams={"values": ["text", "numeric", "boolean", "datetime"]},
+        width=120,
+    )
+    # Numeric params
+    for col_name in ["mean", "std", "min", "max"]:
+        gb.configure_column(col_name, type=["numericColumn"], precision=2, width=100)
 
-    # ── Render column cards ──────────────────────────────────────────
-    for i in range(col_count):
-        col_def = resolved_schema[i] if i < len(resolved_schema) else {}
-        dtype_raw = col_def.get("data_type", "text").lower()
-        display_type = "numeric" if dtype_raw in ("numeric", "integer") else dtype_raw
+    grid_options = gb.build()
 
-        with st.container(border=True):
-            st.text_input(
-                "Column Name",
-                value=col_def.get("column_name", f"col_{i+1}"),
-                key=f"_col_{ver}_{i}_name",
-            )
-            col_type = st.selectbox(
-                "Type",
-                options=["text", "numeric", "boolean", "datetime"],
-                index=["text", "numeric", "boolean", "datetime"].index(display_type)
-                if display_type in ("text", "numeric", "boolean", "datetime") else 0,
-                key=f"_col_{ver}_{i}_type",
-            )
+    response = AgGrid(
+        st.session_state["_grid_data"],
+        gridOptions=grid_options,
+        update_on=["cellValueChanged"],
+        data_return_mode=DataReturnMode.AS_INPUT,
+        key="schema_grid",
+        height=min(60 * len(fresh_data) + 80, 400),
+        allow_unsafe_jscode=True,
+    )
 
-            if col_type == "numeric":
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.number_input("Mean", value=col_def.get("mean", 50.0),
-                                    key=f"_col_{ver}_{i}_mean")
-                    st.number_input("Min", value=col_def.get("min", 0.0),
-                                    key=f"_col_{ver}_{i}_min")
-                with c2:
-                    st.number_input("Std", value=col_def.get("std", 20.0),
-                                    key=f"_col_{ver}_{i}_std")
-                    st.number_input("Max", value=col_def.get("max", 100.0),
-                                    key=f"_col_{ver}_{i}_max")
+    # Capture edits back to session state
+    if response.data is not None:
+        st.session_state["_grid_data"] = response.data
 
-    # ── Add / Remove rows ────────────────────────────────────────────
-    c1, c2, _ = st.columns([1, 1, 4])
+    # ── Add / Delete rows ─────────────────────────────────────────────
+    c1, c2, c3 = st.columns([1, 1, 4])
     with c1:
-        if st.button("+ Add Column", use_container_width=True):
-            st.session_state["_col_count"] += 1
+        if st.button("+ Add Row", use_container_width=True):
+            new_row = pd.DataFrame([{
+                "column_name": "new_col",
+                "data_type": "text",
+                "mean": None, "std": None, "min": None, "max": None,
+            }])
+            st.session_state["_grid_data"] = pd.concat(
+                [st.session_state["_grid_data"], new_row], ignore_index=True
+            )
             st.rerun()
     with c2:
-        if st.button("− Remove Last", use_container_width=True) and col_count > 0:
-            st.session_state["_col_count"] -= 1
-            st.rerun()
+        if st.button("− Delete Selected", use_container_width=True):
+            sel = response.selected_rows
+            if sel is not None and not sel.empty:
+                keep = st.session_state["_grid_data"].drop(sel.index, errors="ignore")
+                st.session_state["_grid_data"] = keep.reset_index(drop=True)
+                st.rerun()
+    with c3:
+        st.caption("Select rows via checkboxes, then click Delete Selected.")
 
-    # ── Build edited schema from widget values ────────────────────────
+    # ── Build edited schema from grid data ────────────────────────────
+    grid_df = st.session_state["_grid_data"]
     edited = []
-    for i in range(st.session_state["_col_count"]):
-        col_type = st.session_state.get(f"_col_{ver}_{i}_type", "text")
+    for _, row in grid_df.iterrows():
         entry = {
-            "column_name": st.session_state.get(f"_col_{ver}_{i}_name", f"col_{i+1}"),
-            "data_type": col_type,
+            "column_name": row.get("column_name", "col"),
+            "data_type": row.get("data_type", "text"),
         }
-        if col_type == "numeric":
-            entry["mean"] = st.session_state.get(f"_col_{ver}_{i}_mean", 50.0)
-            entry["std"] = st.session_state.get(f"_col_{ver}_{i}_std", 20.0)
-            entry["min"] = st.session_state.get(f"_col_{ver}_{i}_min", 0.0)
-            entry["max"] = st.session_state.get(f"_col_{ver}_{i}_max", 100.0)
+        if entry["data_type"] == "numeric":
+            entry["mean"] = row.get("mean") if pd.notna(row.get("mean")) else 50.0
+            entry["std"] = row.get("std") if pd.notna(row.get("std")) else 20.0
+            entry["min"] = row.get("min") if pd.notna(row.get("min")) else 0.0
+            entry["max"] = row.get("max") if pd.notna(row.get("max")) else 100.0
         edited.append(entry)
 
     # ── Generation options ───────────────────────────────────────────────
