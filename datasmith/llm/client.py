@@ -1,6 +1,6 @@
 """LLM client — OpenAI-compatible API (Groq, OpenRouter, Gemini).
 
-Ponytail: raw requests, no SDKs. Works with any OpenAI-compatible endpoint.
+Raw requests, no SDKs. Works with any OpenAI-compatible endpoint.
 Supports Groq, OpenRouter, and Gemini out of the box.
 """
 

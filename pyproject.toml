@@ -29,3 +29,9 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
 ]
+
+[tool.flake8]
+max-line-length = 100
+exclude = [".venv", ".git", "__pycache__", "dist", "build"]
+extend-ignore = ["W391"]
+per-file-ignores = {"datasmith/schema/crawler.py" = "E501", "datasmith/llm/discovery.py" = "E501"}

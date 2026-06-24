@@ -1,6 +1,6 @@
-"""Imperfection Analyzer — extract domain-specific data quality fingerprints from real datasets.
+"""Imperfection Analyzer — statistical analysis of real datasets.
 
-Ponytail: numpy + scipy only. No Cleanlab, no PyOD. Stdlib stats where possible.
+numpy + scipy only. No Cleanlab, no PyOD. Stdlib stats where possible.
 Each function returns a JSON-serializable dict. No classes — just functions.
 """
 
@@ -9,6 +9,7 @@ import os
 from typing import Any, Optional
 
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +145,6 @@ def analyze_skew(df) -> dict[str, dict]:
 
     Returns {col_name: {distribution, skewness, kurtosis, fitted_params?}}
     """
-    from scipy import stats as scipy_stats
-
     results = {}
     for col in df.columns:
         if not _is_numeric(df[col]):
@@ -371,7 +370,6 @@ def analyze_kg_datasets(kg, domain_name: str) -> list[dict]:
 
     # Get all datasets for this domain
     from datasmith.schema.crawler import _download_file, _find_csv_files
-    from datasmith.schema.models import DatasetSchema
 
     domain = kg.get_domain_by_name(domain_name)
     if not domain:
@@ -388,9 +386,13 @@ def analyze_kg_datasets(kg, domain_name: str) -> list[dict]:
         try:
             if ds.source == "url":
                 import tempfile
-                fp = _download_file(ds.source_url,
-                                    os.path.join(tempfile.gettempdir(),
-                                                 f"datasmith_{ds.dataset_name.replace(' ', '_')}.csv"))
+                fp = _download_file(
+                    ds.source_url,
+                    os.path.join(
+                        tempfile.gettempdir(),
+                        f"datasmith_{ds.dataset_name.replace(' ', '_')}.csv",
+                    ),
+                )
                 if fp and fp.endswith(".csv"):
                     result = analyze_csv(fp, domain_name=domain_name,
                                          dataset_name=ds.dataset_name)

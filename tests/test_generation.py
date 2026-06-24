@@ -176,7 +176,6 @@ class TestImperfectionInjection:
 
     def test_null_injection_on_generated_data(self):
         """Full pipeline: generate_dataset with real imperfection profile."""
-        from datasmith.imperfections.profiles import load_profile_from_kg
         db = Database(":memory:")
         kg = KnowledgeGraph(db)
         df = engine.generate_dataset(kg, "e-commerce", n_rows=200,
@@ -198,7 +197,7 @@ class TestDatabaseContextManager:
             db.execute("CREATE TABLE t(x INT)")
             db.execute("INSERT INTO t VALUES (42)")
         # Re-open and verify
-        db2 = Database(":memory:")
+        _ = Database(":memory:")
         # SQLite :memory: is a new DB each time, so we can't verify persistence.
         # Just verify no exception raised.
         assert True

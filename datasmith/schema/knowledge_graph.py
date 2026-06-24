@@ -175,7 +175,8 @@ class KnowledgeGraph:
                       limit: int = 100) -> list[DatasetSchema]:
         if domain_id:
             rows = self.db.fetchall(
-                "SELECT * FROM dataset_schemas WHERE domain_id = ? ORDER BY crawled_at DESC LIMIT ?",
+                "SELECT * FROM dataset_schemas "
+                "WHERE domain_id = ? ORDER BY crawled_at DESC LIMIT ?",
                 (domain_id, limit),
             )
         else:

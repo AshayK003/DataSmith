@@ -39,14 +39,22 @@ class TestCacheKey:
 
 class TestParseLLMResponse:
     def test_plain_json(self):
-        raw = '{"domain": "e-commerce", "domain_description": "test", "columns": [{"column_name": "id", "data_type": "text", "description": "ID"}]}'
+        raw = (
+            '{"domain": "e-commerce", "domain_description": "test", '
+            '"columns": [{"column_name": "id", "data_type": "text", '
+            '"description": "ID"}]}'
+        )
         result = _parse_llm_response(raw)
         assert result is not None
         assert result.domain == "e-commerce"
         assert len(result.columns) == 1
 
     def test_markdown_fenced_json(self):
-        raw = '```json\n{"domain": "finance", "domain_description": "test", "columns": [{"column_name": "amount", "data_type": "numeric", "description": "Amount"}]}\n```'
+        raw = (
+            '```json\n{"domain": "finance", "domain_description": "test", '
+            '"columns": [{"column_name": "amount", "data_type": "numeric", '
+            '"description": "Amount"}]}\n```'
+        )
         result = _parse_llm_response(raw)
         assert result is not None
         assert result.domain == "finance"

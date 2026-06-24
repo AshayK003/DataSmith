@@ -1,7 +1,7 @@
-"""Imperfection Injector — apply domain-specific data quality issues to clean data.
+"""Imperfection Injector — apply nulls, outliers, noise, and skew to clean DataFrames.
 
-Ponytail: numpy only. No additional deps. Each injector modifies a DataFrame
-in-place following the imperfection profile for the target domain.
+numpy only. No additional deps. Each injector modifies a DataFrame
+in-place — the generator produces clean data, the injectors add realism.
 """
 
 import logging

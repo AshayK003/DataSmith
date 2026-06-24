@@ -1,6 +1,6 @@
 """Domain Imperfection Profiles — default + analyzed fingerprints for each domain.
 
-Ponytail: no classes, just dicts. Default profiles serve as priors until
+No classes, just dicts. Default profiles serve as priors until
 real analysis data is available. Real profiles are JSON stored in KG's
 domain_profiles table.
 """

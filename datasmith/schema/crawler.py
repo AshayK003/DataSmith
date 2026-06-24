@@ -46,50 +46,50 @@ SEED_DOMAINS = {
 SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     "e-commerce": [
         ("kaggle", "olistbr/brazilian-ecommerce", "Brazilian E-Commerce"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv", "Candy Rankings"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv", "Alcohol Consumption"),  # noqa: E501
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv", "Candy Rankings"),  # noqa: E501
     ],
     "healthcare": [
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure Clinical"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", "Wine Quality Red"),
-        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", "Wine Quality White"),
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv", "Heart Failure Clinical"),  # noqa: E501
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", "Wine Quality Red"),  # noqa: E501
+        ("url", "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", "Wine Quality White"),  # noqa: E501
         ("kaggle", "mathchi/diabetes-data-set", "Diabetes Dataset"),
     ],
     "finance": [
         ("kaggle", "borismk/credit-card-transactions-dataset", "Credit Card Transactions"),
-        ("url", "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv", "CO2 Emissions (OWID)"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv", "Airline Safety"),
+        ("url", "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv", "CO2 Emissions (OWID)"),  # noqa: E501
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv", "Airline Safety"),  # noqa: E501
     ],
     "education": [
         ("kaggle", "spsci/academic-data", "Academic Data"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/grad-students.csv", "College Graduate Students"),
-        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv", "COVID-19 Latest (OWID)"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/grad-students.csv", "College Graduate Students"),  # noqa: E501
+        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv", "COVID-19 Latest (OWID)"),  # noqa: E501
     ],
     "social-media": [
         ("kaggle", "benjaminawd/youtube-trending-stats", "YouTube Trending"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/masculinity-survey/masculinity-survey.csv", "Masculinity Survey"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/masculinity-survey/masculinity-survey.csv", "Masculinity Survey"),  # noqa: E501
     ],
     "iot-sensors": [
         ("kaggle", "uciml/electric-power-consumption-data-set", "Power Consumption"),
-        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/airline-passengers.csv", "Airline Passengers"),
-        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv", "Daily Min Temperatures"),
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/airline-passengers.csv", "Airline Passengers"),  # noqa: E501
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv", "Daily Min Temperatures"),  # noqa: E501
     ],
     "real-estate": [
         ("kaggle", "ahmedshahriarsakib/usa-real-estate-dataset", "USA Real Estate"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/hate-crimes/hate_crimes.csv", "Hate Crimes by Metro"),
-        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/bad-drivers/bad-drivers.csv", "Bad Drivers"),
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/hate-crimes/hate_crimes.csv", "Hate Crimes by Metro"),  # noqa: E501
+        ("url", "https://raw.githubusercontent.com/fivethirtyeight/data/master/bad-drivers/bad-drivers.csv", "Bad Drivers"),  # noqa: E501
     ],
     "transportation": [
         ("kaggle", "dansbecker/nyc-taxi-trip-duration", "NYC Taxi Trips"),
-        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv", "Vaccinations Data"),
+        ("url", "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv", "Vaccinations Data"),  # noqa: E501
     ],
     "energy": [
         ("kaggle", "robikscube/hourly-energy-consumption", "Hourly Energy Consumption"),
-        ("url", "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv", "OWID Energy Data"),
+        ("url", "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv", "OWID Energy Data"),  # noqa: E501
     ],
     "manufacturing": [
         ("kaggle", "rabieelkharoua/manufacturing-dataset", "Manufacturing Quality"),
-        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/shampoo.csv", "Shampoo Sales"),
+        ("url", "https://raw.githubusercontent.com/jbrownlee/Datasets/master/shampoo.csv", "Shampoo Sales"),  # noqa: E501
     ],
 }
 
@@ -160,7 +160,7 @@ def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
     """Read a CSV with automatic delimiter detection."""
     import pandas as pd
     import csv
-    
+
     # Try comma first (fast path)
     try:
         df = pd.read_csv(file_path, nrows=nrows, encoding="utf-8")
@@ -168,7 +168,7 @@ def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
             return df
     except Exception:
         pass
-    
+
     # Try semicolon (common in UCI datasets)
     try:
         df = pd.read_csv(file_path, nrows=nrows, sep=";", encoding="utf-8")
@@ -176,7 +176,7 @@ def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
             return df
     except Exception:
         pass
-    
+
     # Try Python CSV Sniffer
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -187,7 +187,7 @@ def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
             return df
     except Exception:
         pass
-    
+
     # Final fallback
     return pd.read_csv(file_path, nrows=nrows, encoding="utf-8")
 
@@ -195,7 +195,7 @@ def _read_csv_safe(file_path: str, nrows: Optional[int] = 10000):
 def scan_data_quality(file_path: str,
                       columns: list[ColumnSchema]) -> list[ColumnSchema]:
     """Scan actual data to fill null_ratio, distinct_count, stats for numeric cols."""
-    import pandas as pd
+
     import numpy as np
 
     try:
@@ -234,7 +234,7 @@ def _store_schema(kg: KnowledgeGraph, dataset: DatasetSchema,
 
     # Update metadata
     try:
-        import pandas as pd
+
         df = _read_csv_safe(csv_path)
         kg.db.execute(
             "UPDATE dataset_schemas SET row_count=?, column_count=? WHERE id=?",

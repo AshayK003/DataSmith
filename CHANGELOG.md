@@ -15,7 +15,7 @@
 
 ## v0.3.6 (2026-06-24)
 
-### Fixed (3 bugs found and patched by OpenCode debugging specialist)
+### Fixed (3 bugs found via stress-test harness)
 
 - **MAR null correlation crash** — `inject_nulls` raised `IndexError` when `null_correlations` contained a self-referencing entry (e.g., `cols=["x", "x"]`). Used `next(gen, None)` instead of `list[0]` for the related column lookup (`datasmith/imperfections/injector.py:62`)
 - **All-NaN noise crash** — `inject_noise` raised `ValueError` on `rng.choice(0, 1)` when a column had zero non-null values. Added empty-Series guard (`datasmith/imperfections/injector.py:180`)

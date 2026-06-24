@@ -41,6 +41,8 @@ jobs:
 
   seed-crawl:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
@@ -57,13 +59,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run crawl + analyze
-        run: uv run python scripts/crawl_and_analyze.py --commit
-
-      - name: Commit results
+      - name: Configure git (needed before script runs)
         run: |
           git config --local user.email "datasmith-bot@users.noreply.github.com"
           git config --local user.name "DataSmith Bot"
+
+      - name: Run crawl + analyze
+        run: uv run python scripts/crawl_and_analyze.py
+
+      - name: Commit and push results
+        run: |
           git add data/datasmith.db
           git diff --staged --quiet || git commit -m "daily seed crawl: $(date +%Y-%m-%d)"
           git push

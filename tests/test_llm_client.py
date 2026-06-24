@@ -10,9 +10,14 @@ class TestGetConfigNoEnvVars:
     """get_config returns empty key, default URL/model, groq provider."""
 
     def test_get_config_no_env_vars(self, monkeypatch):
-        for key in ["GROQ_API_KEY", "OPENROUTER_API_KEY",
-                     "GEMINI_API_KEY", "LLM_API_KEY",
-                     "LLM_BASE_URL", "LLM_MODEL"]:
+        for key in (
+            "GROQ_API_KEY",
+            "OPENROUTER_API_KEY",
+            "GEMINI_API_KEY",
+            "LLM_API_KEY",
+            "LLM_BASE_URL",
+            "LLM_MODEL",
+        ):
             monkeypatch.delenv(key, raising=False)
 
         api_key, base_url, model, provider = get_config()

@@ -16,7 +16,7 @@ from typing import Optional
 from pydantic import ValidationError
 
 from datasmith.llm.client import chat_complete, is_available, get_config
-from datasmith.llm.schemas import ColumnSchema, NLDiscoveryResult
+from datasmith.llm.schemas import NLDiscoveryResult
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.generation.engine import schema_from_kg
@@ -25,18 +25,25 @@ logger = logging.getLogger(__name__)
 
 # ── System prompt for domain classification + column extraction ─────────
 
-_SYSTEM_PROMPT = """You are a data schema expert. Given a natural language description of a dataset, you:
-1. Identify the domain (e-commerce, healthcare, finance, education, social-media, iot-sensors, real-estate, transportation, energy, manufacturing, or a custom domain for anything else).
-2. Describe the domain in one short sentence.
-3. Extract the columns that make sense for this dataset.
-
-Rules:
-- column_name: lowercase snake_case
-- data_type: one of (numeric, integer, text, boolean, datetime)
-- For numeric columns: provide distribution_hint (normal, uniform, powerlaw, lognormal, left_skewed), min, max, and mean where reasonable.
-- Provide 4-10 columns. Include at least one text ID column and a datetime column for realistic datasets.
-- Response must be valid JSON matching the schema exactly.
-"""
+_SYSTEM_PROMPT = (
+    "You are a data schema expert. Given a natural language description "
+    "of a dataset, you:\n"
+    "1. Identify the domain (e-commerce, healthcare, finance, education, "
+    "social-media, iot-sensors, real-estate, transportation, energy, "
+    "manufacturing, or a custom domain for anything else).\n"
+    "2. Describe the domain in one short sentence.\n"
+    "3. Extract the columns that make sense for this dataset.\n"
+    "\n"
+    "Rules:\n"
+    "- column_name: lowercase snake_case\n"
+    "- data_type: one of (numeric, integer, text, boolean, datetime)\n"
+    "- For numeric columns: provide distribution_hint (normal, uniform, "
+    "powerlaw, lognormal, left_skewed), min, max, and mean where "
+    "reasonable.\n"
+    "- Provide 4-10 columns. Include at least one text ID column and a "
+    "datetime column for realistic datasets.\n"
+    "- Response must be valid JSON matching the schema exactly.\n"
+)
 
 
 def _cache_key(nl_input: str) -> str:

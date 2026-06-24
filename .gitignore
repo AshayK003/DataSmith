@@ -1,8 +1,3 @@
-# engineering_memory.md — project-specific engineering cognition
-# Store high-value insights, patterns, anti-patterns, and heuristics
-# Updated after every meaningful task. NEVER committed.
-engineering_memory.md
-
 # Python
 __pycache__/
 *.pyc
@@ -42,3 +37,13 @@ data/*
 
 # Logs
 *.log
+
+# Hermes agent working files
+.hermes/
+
+# Engineering memory (project-specific cognition)
+engineering_memory.md
+
+# AI-generated docs (replaced by live code)
+docs/PERFORMANCE.md
+tests/TESTING_STRATEGY.md

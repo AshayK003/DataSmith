@@ -1,8 +1,8 @@
-"""Generation Pipeline — orchestrates data generation → imperfection injection → export.
+"""Generation Engine — orchestrates schema resolution, generation, and imperfection injection.
 
-Ponytail: generator produces a DataFrame, injector modifies it in-place,
-engine provides a single entry point. No async, no queues — keep it synchronous
-for Phase 1 (runs under Streamlit, single user).
+The generator produces a DataFrame, the injector modifies it in-place,
+and the engine ties them together. No state, no side effects.
+For Phase 1 (runs under Streamlit, single user).
 """
 
 import logging

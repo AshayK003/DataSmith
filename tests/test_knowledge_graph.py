@@ -130,7 +130,7 @@ class TestDomainProfiles:
     def test_upsert_profile(self, kg):
         did = kg.upsert_domain("iot-sensors")
         profile = json.dumps({"null_correlations": {"temp": 0.1}})
-        pid = kg.upsert_domain_profile(did, profile)
+        kg.upsert_domain_profile(did, profile)
         loaded = kg.get_domain_profile(did)
         assert loaded is not None
         assert "null_correlations" in loaded.profile_json

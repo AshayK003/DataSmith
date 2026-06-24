@@ -51,4 +51,3 @@ SPARKLES = _svg(
     '<path d="M3 5h4"/>'
     '<path d="M17 19h4"/>',
 )
-

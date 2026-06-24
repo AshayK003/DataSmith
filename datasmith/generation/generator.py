@@ -1,6 +1,6 @@
 """Data Generator — produce realistic synthetic data from KG schema using numpy/scipy.
 
-Ponytail: no SDV, no PyTorch. Uses distribution hints from the Knowledge Graph
+Uses distribution hints from the Knowledge Graph
 (normal, powerlaw, lognormal, uniform) with column stats (mean, std, min, max).
 
 Zero training time, zero deps beyond numpy/scipy which are already installed.
@@ -75,15 +75,15 @@ def _sample_uniform(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
 def _sample_beta_left_skewed(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     """Left-skewed (negatively skewed) using beta distribution."""
     mean = stat.get("mean", 0.5)
-    std = max(stat.get("std", 0.2), 0.01)
     lo = stat.get("min", 0.0)
     hi = stat.get("max", 1.0)
     if hi <= lo:
         hi = lo + 1.0
     # Beta distribution with a > b for left skew
     total = max(mean - lo, 1.0)
+    ratio = max(mean - lo, 0.01) / max(hi - lo, 0.01)
     a = max(total / (hi - lo) * 5, 1.0)
-    b = max(a * (1 - (mean - lo) / max(hi - lo, 0.01)) / max((mean - lo) / max(hi - lo, 0.01), 0.01), 1.0)
+    b = max(a * (1 - ratio) / max(ratio, 0.01), 1.0)
     data = rng.beta(a, b, n) * (hi - lo) + lo
     return np.clip(data, lo, hi)
 
@@ -107,7 +107,10 @@ def _generate_numeric_column(col_name: str, data_type: str, stats: dict,
     try:
         data = sampler(n, stats, rng)
     except Exception as e:
-        logger.warning("%s: %s sampler failed (%s), falling back to uniform", col_name, dist_hint, e)
+        logger.warning(
+            "%s: %s sampler failed (%s), falling back to uniform",
+            col_name, dist_hint, e,
+        )
         data = rng.uniform(stats.get("min", 0), stats.get("max", 100), n)
 
     # Ensure precision
