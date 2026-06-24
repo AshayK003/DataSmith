@@ -29,6 +29,10 @@ st.set_page_config(page_title="Generate — DataSmith", layout="centered")
 st.markdown(f"<h1 style='text-align: center;'>{_BRAND_SVG} Generate Dataset</h1>",
             unsafe_allow_html=True)
 
+# ── Session defaults ───────────────────────────────────────────────────────
+if "n_rows" not in st.session_state:
+    st.session_state["n_rows"] = 500
+
 # ── Init KG ───────────────────────────────────────────────────────────────
 
 @st.cache_resource
@@ -166,7 +170,8 @@ if resolved_schema:
     col1, col2 = st.columns(2)
     with col1:
         n_rows = st.number_input("Number of rows", min_value=10, max_value=100_000,
-                                 value=500, step=100)
+                                 value=st.session_state["n_rows"], step=100)
+        st.session_state["n_rows"] = n_rows
     with col2:
         inject_imperfections = st.checkbox("Inject realistic imperfections", value=True,
                                            help="Apply domain-specific nulls, outliers, and noise")
@@ -268,7 +273,7 @@ if "last_df" in st.session_state:
         st.download_button(
             "📥 Download CSV",
             data=csv_buffer,
-            file_name=f"datasmith_{st.session_state['active_domain']}_{n_rows}rows.csv",
+            file_name=f"datasmith_{st.session_state['active_domain']}_{st.session_state['n_rows']}rows.csv",
             mime="text/csv",
             use_container_width=True,
         )
@@ -280,7 +285,7 @@ if "last_df" in st.session_state:
         st.download_button(
             "📥 Download JSON",
             data=json_buffer,
-            file_name=f"datasmith_{st.session_state['active_domain']}_{n_rows}rows.json",
+            file_name=f"datasmith_{st.session_state['active_domain']}_{st.session_state['n_rows']}rows.json",
             mime="application/json",
             use_container_width=True,
         )

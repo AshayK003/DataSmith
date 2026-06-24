@@ -32,7 +32,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 - **Streamlit UI** — domain selector, editable schema table, preview, CSV/JSON export
 - **Lightweight** — pure Python, 8 core deps, no PyTorch/SDV required
 - **Lucide SVGs** — clean, MIT-licensed icons throughout the UI
-- **76+ tests** — run via `uv run pytest`
+- **74+ tests** — run via `uv run pytest`
 
 ## Architecture
 
@@ -81,7 +81,6 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 │   ├── profiles.py          # Domain imperfection profiles
 │   └── injector.py          # Apply imperfections to clean data
 └── generation/
-    ├── models.py            # ColumnDef dataclass (typed pipeline DTO)
     ├── generator.py         # numpy/scipy data generation
     └── engine.py            # Pipeline orchestrator
 
@@ -94,7 +93,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 ├── crawl_and_analyze.py     # Batch crawl + analyze all domains
 └── analyze_domains.py       # Domain fingerprint analysis
 
-📜 tests/                    # 76+ tests, run via: uv run pytest
+📜 tests/                    # 74+ tests, run via: uv run pytest
 📜 app.py                    # Streamlit entry point
 ```
 

@@ -14,11 +14,11 @@ from typing import Optional
 
 from pydantic import ValidationError
 
-from datasmith.llm.client import chat_complete, is_available, _get_config
+from datasmith.llm.client import chat_complete, is_available, get_config
 from datasmith.llm.schemas import ColumnSchema, NLDiscoveryResult
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.schema.knowledge_graph import KnowledgeGraph
-from datasmith.generation.engine import schema_from_kg, _generic_schema
+from datasmith.generation.engine import schema_from_kg
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _llm_extract(nl_input: str) -> Optional[NLDiscoveryResult]:
 def _save_to_cache(kg: KnowledgeGraph, nl_input: str, result: NLDiscoveryResult) -> None:
     """Save LLM extraction result to llm_cache."""
     key = _cache_key(nl_input)
-    _, _, model, _ = _get_config()
+    _, _, model, _ = get_config()
     kg.db.execute(
         """INSERT OR REPLACE INTO llm_cache
            (cache_key, model, response, expires_at)

@@ -106,15 +106,3 @@ def generate_dataset(kg: KnowledgeGraph,
             apply_profile(df, profile, rng)
 
     return df
-
-
-def export_csv(df: pd.DataFrame, path: str) -> None:
-    """Export DataFrame to CSV."""
-    df.to_csv(path, index=False)
-    logger.info("Exported %d rows to %s", len(df), path)
-
-
-def export_json(df: pd.DataFrame, path: str) -> None:
-    """Export DataFrame to JSON."""
-    df.to_json(path, orient="records", date_format="iso")
-    logger.info("Exported %d rows to %s", len(df), path)

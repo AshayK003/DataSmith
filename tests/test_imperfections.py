@@ -114,10 +114,6 @@ class TestMissingness:
         assert "mcar_col" in cols
         assert cols["mcar_col"]["pattern"] == "MCAR"
 
-    @pytest.mark.skipif(
-        not hasattr(analyzer, "classify_missingness") or True,
-        reason="MAR detection is heuristic and may not fire in test env",
-    )
     def test_classifies_mar(self, small_missing_df):
         result = analyzer.classify_missingness(small_missing_df)
         cols = result["columns"]

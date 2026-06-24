@@ -35,7 +35,7 @@ _PROVIDERS: dict[str, dict] = {
 _DEFAULT_PROVIDER = "groq"
 
 
-def _get_config() -> tuple[str, str, str, str]:
+def get_config() -> tuple[str, str, str, str]:
     """Read LLM config from env vars.
 
     Priority: GEMINI_API_KEY → GROQ_API_KEY → OPENROUTER_API_KEY → LLM_API_KEY.
@@ -82,7 +82,7 @@ def chat_complete(
     Returns:
         Response text, or None on failure.
     """
-    api_key, base_url, model, provider = _get_config()
+    api_key, base_url, model, provider = get_config()
     if not api_key:
         logger.warning("No LLM API key configured")
         return None
@@ -131,5 +131,5 @@ def chat_complete(
 
 def is_available() -> bool:
     """Check if an LLM API key is configured."""
-    key, _, _, _ = _get_config()
+    key, _, _, _ = get_config()
     return bool(key)

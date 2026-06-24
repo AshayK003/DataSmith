@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.1 (2026-06-25)
+
+### Fixed
+- **n_rows scoping bug** — CSV/JSON download buttons crashed when user had a cached dataset from a previous session. `n_rows` was defined inside a conditional block but referenced outside. Now stored in `st.session_state`.
+- **Permanently skipped MAR detection test** — removed `or True` skip condition. Test now runs and passes.
+
+### Removed
+- **`ColumnDef` dataclass** (`generation/models.py`) — defined but never wired into the pipeline. The engine passes raw dicts throughout. Deleted file + 2 orphaned tests.
+- **`export_csv` / `export_json`** (`engine.py`) — the Streamlit app handles export directly via `df.to_csv()` / `df.to_json()`. Deleted functions + 1 orphaned test.
+- **`KnowledgeGraph.get_columns()`** — only tested, never called by production code. The real query is `get_column_schemas_for_domain()`. Deleted method, rewrote test to use production code path.
+- **Dead import** `_generic_schema` in `discovery.py` — `schema_from_kg()` handles fallback internally.
+
+### Changed
+- **`_get_config` → `get_config`** — renamed from private to public in `llm/client.py`. Eliminates cross-module private function imports.
+- **Redundant no-op removed** — `if isinstance(path, str): path = path` in `_crawl_kaggle`.
+- **Duplicate `import tempfile` removed** — from `_crawl_url`.
+
 ## v0.3.0 (2026-06-25)
 
 ### Added

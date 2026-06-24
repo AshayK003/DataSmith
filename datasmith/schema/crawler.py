@@ -264,9 +264,6 @@ def _crawl_kaggle(kg: KnowledgeGraph, dataset_slug: str,
             logger.warning("Kaggle %s failed: %s", dataset_slug, e)
         return None
 
-    if isinstance(path, str):
-        path = path
-
     csv_files = _find_csv_files(path)
     if not csv_files:
         logger.warning("No CSVs in Kaggle %s", dataset_slug)
@@ -341,7 +338,6 @@ def _crawl_url(kg: KnowledgeGraph, url: str,
     # If it's a zip, extract and find CSVs
     if local_path.endswith(".zip"):
         import zipfile
-        import tempfile
         try:
             with zipfile.ZipFile(local_path, "r") as zf:
                 extract_dir = tempfile.mkdtemp()

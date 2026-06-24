@@ -1,8 +1,5 @@
 """Tests for the Generation Pipeline (Phase 1 MVP)."""
 
-import tempfile
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -154,14 +151,6 @@ class TestGenerateDataset:
         assert len(df) == 100
         db.close()
 
-    def test_export_csv(self):
-        df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False,
-                                         mode="w") as f:
-            engine.export_csv(df, f.name)
-            loaded = pd.read_csv(f.name)
-            pd.testing.assert_frame_equal(df, loaded)
-
 
 class TestImperfectionInjection:
     """Verify the imperfection injection path is actually exercised."""
@@ -198,40 +187,6 @@ class TestImperfectionInjection:
         assert len(df) == 200
         assert len(df.columns) >= 6
         db.close()
-
-
-# ── ColumnDef DTO tests ──────────────────────────────────────────────────
-
-
-class TestColumnDef:
-    def test_from_dict_populates_defaults(self):
-        from datasmith.generation.models import ColumnDef
-        c = ColumnDef.from_dict({"column_name": "price"})
-        assert c.column_name == "price"
-        assert c.data_type == "text"  # default
-        assert c.mean == 0.0          # default
-        assert c.std == 1.0           # default
-
-    def test_from_dict_full_roundtrip(self):
-        from datasmith.generation.models import ColumnDef
-        d = {
-            "column_name": "price",
-            "data_type": "numeric",
-            "distribution_hint": "lognormal",
-            "mean": 100.0,
-            "std": 25.0,
-            "min": 0.0,
-            "max": 500.0,
-            "null_ratio": 0.05,
-        }
-        c = ColumnDef.from_dict(d)
-        assert c.data_type == "numeric"
-        assert c.mean == 100.0
-        assert c.distribution_hint == "lognormal"
-        # to_dict excludes None values
-        exported = c.to_dict()
-        assert exported["column_name"] == "price"
-        assert exported["distribution_hint"] == "lognormal"
 
 
 # ── Database context manager tests ──────────────────────────────────────

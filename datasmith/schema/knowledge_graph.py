@@ -207,11 +207,6 @@ class KnowledgeGraph:
         )
         self.db.commit()
 
-    def get_columns(self, dataset_id: int) -> list[ColumnSchema]:
-        rows = self.db.fetchall(
-            "SELECT * FROM column_schemas WHERE dataset_id = ?", (dataset_id,))
-        return [ColumnSchema(**r) for r in rows]
-
     def get_column_schemas_for_domain(
         self, domain_name: str
     ) -> Optional[list[dict]]:
