@@ -35,8 +35,8 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         if col not in df.columns:
             continue
 
-        # Skip non-numeric columns to avoid dtype conversion warnings
-        if not np.issubdtype(df[col].dtype, np.number):
+        # Skip only binary/bytes and boolean columns (can't hold NaN)
+        if np.issubdtype(df[col].dtype, np.bytes_) or np.issubdtype(df[col].dtype, np.bool_):
             continue
         # Convert integers to float64 to support NaN
         if np.issubdtype(df[col].dtype, np.integer):

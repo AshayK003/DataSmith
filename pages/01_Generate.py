@@ -111,6 +111,15 @@ if resolved_schema:
     st.markdown("### Schema Editor")
     if schema_source:
         st.caption(schema_source)
+        # Show domain description from seed data
+        if st.session_state["active_domain"] in SEED_DOMAINS:
+            desc = SEED_DOMAINS[st.session_state["active_domain"]]
+            domain_obj = kg.get_domain_by_name(st.session_state["active_domain"])
+            n_datasets = len(kg.list_datasets(domain_id=domain_obj.id)) if domain_obj else 0
+            meta = [f"_{desc}_"]
+            if n_datasets:
+                meta.append(f"{n_datasets} dataset{'s' if n_datasets != 1 else ''} crawled")
+            st.caption(" · ".join(meta))
     st.caption("Edit column names, types, and parameters. Add or remove rows.")
 
     # Convert schema to editor-friendly format

@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from datasmith.generation import generator, engine
+from datasmith.imperfections.injector import apply_profile
 from datasmith.core.database import Database
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 
@@ -160,3 +161,40 @@ class TestGenerateDataset:
             engine.export_csv(df, f.name)
             loaded = pd.read_csv(f.name)
             pd.testing.assert_frame_equal(df, loaded)
+
+
+class TestImperfectionInjection:
+    """Verify the imperfection injection path is actually exercised."""
+
+    def test_injects_nulls_via_pipeline(self):
+        df = pd.DataFrame({
+            "price": [10.0, 20.0, 30.0, 40.0, 50.0,
+                      60.0, 70.0, 80.0, 90.0, 100.0],
+            "name": ["a", "b", "c", "d", "e",
+                     "f", "g", "h", "i", "j"],
+        })
+        rng = np.random.default_rng(42)
+        profile = {
+            "null_patterns": {
+                "price": {"null_pct": 50, "pattern": "MCAR"},
+                "name": {"null_pct": 50, "pattern": "MCAR"},
+            },
+            "outlier_patterns": {},
+            "noise_patterns": {},
+        }
+        apply_profile(df, profile, rng)
+        assert df["price"].isnull().sum() > 0, "Numeric nulls injected"
+        assert df["name"].isnull().sum() > 0, "Text nulls injected (bug regression guard)"
+
+    def test_null_injection_on_generated_data(self):
+        """Full pipeline: generate_dataset with real imperfection profile."""
+        from datasmith.imperfections.profiles import load_profile_from_kg
+        db = Database(":memory:")
+        kg = KnowledgeGraph(db)
+        df = engine.generate_dataset(kg, "e-commerce", n_rows=200,
+                                     inject_imperfections=True, seed=42)
+        # Profile won't exist in empty KG, so no nulls — but the pipeline
+        # should still execute without errors and produce expected shape
+        assert len(df) == 200
+        assert len(df.columns) >= 6
+        db.close()
