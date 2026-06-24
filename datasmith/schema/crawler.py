@@ -401,7 +401,7 @@ def seed_knowledge_graph(kg: KnowledgeGraph,
     import numpy as np  # noqa: F401
 
     results: dict = {}
-    datasets = datasets or SEED_DATASETS
+    datasets = datasets if datasets is not None else SEED_DATASETS
 
     for domain_name, entries in datasets.items():
         domain_id = kg.upsert_domain(domain_name, SEED_DOMAINS.get(domain_name, ""))
