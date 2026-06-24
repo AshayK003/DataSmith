@@ -171,13 +171,11 @@ def generate_column(col_name: str, data_type: str,
     elif dtype == "datetime":
         start = stats.get("min_date", "2020-01-01")
         end = stats.get("max_date", "2024-12-31")
-        import pandas as pd
-        start_ts = pd.Timestamp(start)
-        end_ts = pd.Timestamp(end)
-        span = (end_ts - start_ts).total_seconds()
-        offsets = rng.random(n) * span
-        return np.array([start_ts + pd.Timedelta(seconds=int(s)) for s in offsets],
-                        dtype="datetime64[ns]")
+        start_ns = np.datetime64(start, "ns")
+        end_ns = np.datetime64(end, "ns")
+        span_ns = int(end_ns - start_ns)
+        offsets = (rng.random(n) * span_ns).astype("timedelta64[ns]")
+        return start_ns + offsets
 
     else:
         logger.warning("Unknown type '%s' for %s, generating text", data_type, col_name)

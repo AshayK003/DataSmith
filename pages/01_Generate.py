@@ -16,9 +16,17 @@ from datasmith.llm.discovery import discover_schema
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.generation.engine import generate_dataset, schema_from_kg, _generic_schema
 
+_BRAND_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round">'
+    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'
+    "</svg>"
+)
+
 st.set_page_config(page_title="Generate — DataSmith", layout="centered")
 
-st.markdown("<h1 style='text-align: center;'>⚒️ Generate Dataset</h1>",
+st.markdown(f"<h1 style='text-align: center;'>{_BRAND_SVG} Generate Dataset</h1>",
             unsafe_allow_html=True)
 
 # ── Init KG ───────────────────────────────────────────────────────────────
@@ -161,8 +169,12 @@ if resolved_schema:
             st.error("At least one column is required.")
             st.stop()
 
-        with st.spinner("Generating dataset..."):
+        with st.status("Generating dataset...", expanded=True) as status:
             try:
+                status.update(
+                    label=f"Generating {n_rows} rows from {len(edited)} columns...",
+                    state="running",
+                )
                 df = generate_dataset(
                     kg=kg,
                     domain_name=st.session_state["active_domain"],
@@ -171,10 +183,11 @@ if resolved_schema:
                     inject_imperfections=inject_imperfections,
                 )
 
+                status.update(label="Done!", state="complete")
                 st.session_state["last_df"] = df
-                st.success(f"Generated {len(df)} rows × {len(df.columns)} columns")
 
             except Exception as e:
+                status.update(label="Generation failed", state="error")
                 st.error(f"Generation failed: {e}")
                 st.stop()
 
@@ -196,6 +209,41 @@ if "last_df" in st.session_state:
     with col3:
         null_pct = round(df.isnull().sum().sum() / (len(df) * len(df.columns)) * 100, 1)
         st.metric("Null %", f"{null_pct}%")
+
+    # Imperfection report
+    with st.expander("📊 Imperfection Report", expanded=True):
+        null_cols = df.isnull().sum()
+        null_cols = null_cols[null_cols > 0].sort_values(ascending=False)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Missing Values**")
+            if len(null_cols) > 0:
+                for col, count in null_cols.head(5).items():
+                    pct = count / len(df) * 100
+                    st.markdown(f"- {col}: **{pct:.1f}%** null")
+            else:
+                st.markdown("_No missing values in any column_")
+
+        with c2:
+            st.markdown("**Outliers (IQR)**")
+            numeric_cols = df.select_dtypes(include="number").columns
+            total_out = 0
+            for col in numeric_cols:
+                q1, q3 = df[col].quantile([0.25, 0.75])
+                iqr = q3 - q1
+                lo, hi = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+                n_out = ((df[col] < lo) | (df[col] > hi)).sum()
+                if n_out > 0:
+                    total_out += n_out
+                    st.markdown(f"- {col}: **{n_out}** outliers ({n_out/len(df)*100:.1f}%)")
+            if total_out == 0:
+                st.markdown("_No outliers detected_")
+
+        st.caption(
+            "Imperfections are injected based on the domain profile. "
+            "Toggle 'Inject imperfections' above to disable."
+        )
 
     # Summary stats
     with st.expander("Column Statistics"):

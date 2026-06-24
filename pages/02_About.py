@@ -2,9 +2,19 @@
 
 import streamlit as st
 
+_INFO_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" '
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round">'
+    '<circle cx="12" cy="12" r="10"/>'
+    '<path d="M12 16v-4"/>'
+    '<path d="M12 8h.01"/>'
+    "</svg>"
+)
+
 st.set_page_config(page_title="About — DataSmith", layout="centered")
 
-st.markdown("<h1 style='text-align: center;'>ℹ️ About DataSmith</h1>",
+st.markdown(f"<h1 style='text-align: center;'>{_INFO_SVG} About DataSmith</h1>",
             unsafe_allow_html=True)
 
 st.markdown(
