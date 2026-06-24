@@ -104,7 +104,8 @@ with st.sidebar:
 st.markdown(
     f"<h1 style='text-align: center;'>{_SVGS['brand']} DataSmith</h1>"
     "<p style='text-align: center; color: #888; font-size: 1.1em;'>"
-    "Generate realistic synthetic datasets for development, testing, and demos.</p>",
+    "Realistic synthetic data for dev, testing, and demos. "
+    "No training. No GPU. No cloud calls.</p>",
     unsafe_allow_html=True,
 )
 
@@ -140,7 +141,7 @@ st.markdown("### Quick Start")
 st.markdown(
     "1. Go to **Generate** in the sidebar\n"
     "2. Select a domain (e-commerce, healthcare, etc.)\n"
-    "3. Edit the schema to your needs\n"
+    "3. Tweak columns, types, and ranges\n"
     "4. Choose row count and generate\n"
     "5. Download your dataset"
 )

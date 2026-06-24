@@ -1,6 +1,6 @@
 # ⚒️ DataSmith
 
-> **Generate realistic synthetic datasets for development, testing, and demos.**
+> **Realistic synthetic data for dev, testing, and demos. No training. No GPU. No cloud calls.**
 > Powered by a Schema Knowledge Graph (real dataset schemas) + Domain Imperfection Fingerprints (statistical patterns from real data).
 
 [![CI](https://github.com/AshayK003/DataSmith/actions/workflows/ci.yml/badge.svg)](https://github.com/AshayK003/DataSmith/actions/workflows/ci.yml)

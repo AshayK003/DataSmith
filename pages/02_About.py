@@ -18,10 +18,11 @@ st.markdown(f"<h1 style='text-align: center;'>{_INFO_SVG} About DataSmith</h1>",
             unsafe_allow_html=True)
 
 st.markdown(
-    "DataSmith generates realistic synthetic datasets for development, testing, "
-    "and demos. It uses a **Schema Knowledge Graph** (crawled from real datasets) "
-    "and **Domain Imperfection Fingerprints** (statistical patterns from real data) "
-    "to produce data that looks and feels authentic."
+    "DataSmith generates realistic synthetic data by learning from real-world "
+    "dataset schemas. Its **Schema Knowledge Graph** (crawled from Kaggle, UCI, "
+    "and HuggingFace) and **Domain Imperfection Fingerprints** (statistical "
+    "patterns extracted from real data) produce datasets that look, feel, "
+    "and break like the real thing."
 )
 
 st.divider()
