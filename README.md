@@ -32,7 +32,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 - **Streamlit UI** -- themed with CSS variables, component overrides, responsive layout, keyboard shortcuts
 - **Lightweight** -- pure Python, 8 core deps, no PyTorch/SDV required
 - **Lucide SVGs** -- shared icon module, MIT-licensed, consistent across all pages
-- **74 tests** -- run via `uv run pytest`, all passing
+- **94 tests** — run via `uv run pytest`, all passing
 
 ## Architecture
 
@@ -95,7 +95,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 ├── crawl_and_analyze.py     # Batch crawl + analyze all domains
 └── analyze_domains.py       # Domain fingerprint analysis
 
-📜 tests/                    # 74+ tests, run via: uv run pytest
+📜 tests/                    # 94+ tests, run via: uv run pytest
 📜 app.py                    # Streamlit entry point
 📜 .streamlit/config.toml    # Theme + client config
 ```

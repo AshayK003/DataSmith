@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.6 (2026-06-24)
+
+### Fixed (3 bugs found and patched by OpenCode debugging specialist)
+
+- **MAR null correlation crash** — `inject_nulls` raised `IndexError` when `null_correlations` contained a self-referencing entry (e.g., `cols=["x", "x"]`). Used `next(gen, None)` instead of `list[0]` for the related column lookup (`datasmith/imperfections/injector.py:62`)
+- **All-NaN noise crash** — `inject_noise` raised `ValueError` on `rng.choice(0, 1)` when a column had zero non-null values. Added empty-Series guard (`datasmith/imperfections/injector.py:180`)
+- **Reversed datetime range** — `generate_column` produced dates outside the intended range when `max_date < min_date` (negative span_ns). Added bounds swap guard (`datasmith/generation/generator.py:174`)
+- **Noise rounding_pct=0** — was silently rounding 1 value due to `max(1, int(...))`. Now rounds 0 values when pct=0.
+
+### Tests
+
+- **94 tests (was 90)** — 4 new regression tests added to `test_injector_edge.py` and `test_generation_edge.py`
+
 ## v0.3.5 (2026-06-24)
 
 ### Security (7 fixes applied from external audit)
