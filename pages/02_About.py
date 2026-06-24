@@ -1,0 +1,46 @@
+"""About Page — project info and credits."""
+
+import streamlit as st
+
+st.set_page_config(page_title="About — DataSmith", layout="centered")
+
+st.markdown("<h1 style='text-align: center;'>ℹ️ About DataSmith</h1>",
+            unsafe_allow_html=True)
+
+st.markdown(
+    "DataSmith generates realistic synthetic datasets for development, testing, "
+    "and demos. It uses a **Schema Knowledge Graph** (crawled from real datasets) "
+    "and **Domain Imperfection Fingerprints** (statistical patterns from real data) "
+    "to produce data that looks and feels authentic."
+)
+
+st.divider()
+
+st.markdown("### Key Features")
+st.markdown(
+    "- **Domain-tuned schemas** — 10 domains sourced from Kaggle, UCI, and HuggingFace\n"
+    "- **Realistic imperfections** — nulls, outliers, and noise patterns extracted from real datasets\n"
+    "- **Customizable** — edit column names, types, and parameters before generation\n"
+    "- **Lightweight** — pure Python, no GPU, no cloud, no training time\n"
+    "- **Open Source** — AGPL v3 licensed"
+)
+
+st.divider()
+
+st.markdown("### Stack")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown("**Backend**\n- Python 3.11+\n- NumPy/SciPy\n- Pandas\n- SQLite (FTS5)")
+with col2:
+    st.markdown("**Data Sources**\n- KaggleHub\n- HuggingFace\n- UCI Archive\n- Frictionless")
+with col3:
+    st.markdown("**Delivery**\n- CSV / JSON\n- Streamlit Cloud\n- AGPL v3")
+
+st.divider()
+
+st.markdown(
+    "<p style='text-align: center; color: #888;'>"
+    "DataSmith v0.2.0 — Built by Ashay Kushwaha<br>"
+    "License: AGPL v3 — <a href='https://github.com/AshayK003/DataSmith'>GitHub</a></p>",
+    unsafe_allow_html=True,
+)
