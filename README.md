@@ -31,6 +31,8 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 - **No training needed** — data generated from statistical metadata using numpy/scipy. Instant generation, zero GPU, zero API calls
 - **Streamlit UI** — domain selector, editable schema table, preview, CSV/JSON export
 - **Lightweight** — pure Python, 8 core deps, no PyTorch/SDV required
+- **Lucide SVGs** — clean, MIT-licensed icons throughout the UI
+- **76+ tests** — run via `uv run pytest`
 
 ## Architecture
 
@@ -69,16 +71,17 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 
 ```
 📦 datasmith/
-├── core/database.py        # SQLite with WAL mode
+├── core/database.py        # SQLite with WAL mode + context manager
 ├── schema/
 │   ├── models.py           # Pydantic models
-│   ├── knowledge_graph.py  # KG CRUD + FTS5 search
+│   ├── knowledge_graph.py  # KG CRUD + FTS5 search + domain queries
 │   └── crawler.py          # Multi-source schema extraction
 ├── imperfections/
 │   ├── analyzer.py          # Statistical analysis of real data
 │   ├── profiles.py          # Domain imperfection profiles
 │   └── injector.py          # Apply imperfections to clean data
 └── generation/
+    ├── models.py            # ColumnDef dataclass (typed pipeline DTO)
     ├── generator.py         # numpy/scipy data generation
     └── engine.py            # Pipeline orchestrator
 
@@ -91,7 +94,7 @@ Open http://localhost:8501 → select a domain → edit schema → generate → 
 ├── crawl_and_analyze.py     # Batch crawl + analyze all domains
 └── analyze_domains.py       # Domain fingerprint analysis
 
-📜 tests/                    # 60+ tests, run via: uv run pytest
+📜 tests/                    # 76+ tests, run via: uv run pytest
 📜 app.py                    # Streamlit entry point
 ```
 
