@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 def _is_numeric(series) -> bool:
     """Check if a pandas series is numeric (not datetime, not object)."""
     dtype = series.dtype
-    return np.issubdtype(dtype, np.number) and not pd.api.types.is_bool_dtype(series)
+    try:
+        return np.issubdtype(dtype, np.number) and not pd.api.types.is_bool_dtype(series)
+    except TypeError:
+        # Extension dtype (e.g. pandas StringDtype) — not numeric
+        return False
 
 
 def _safe_stats(series) -> dict:

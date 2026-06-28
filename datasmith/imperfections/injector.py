@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +36,12 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         if col not in df.columns:
             continue
 
-        # Skip only binary/bytes and boolean columns (can't hold NaN)
-        if np.issubdtype(df[col].dtype, np.bytes_) or np.issubdtype(df[col].dtype, np.bool_):
+        # Skip only boolean columns (can't hold NaN).
+        # Handle extension dtypes (pandas StringDtype, etc.) safely.
+        if pd.api.types.is_bool_dtype(df[col].dtype):
             continue
         # Convert integers to float64 to support NaN
-        if np.issubdtype(df[col].dtype, np.integer):
+        if pd.api.types.is_integer_dtype(df[col].dtype):
             df[col] = df[col].astype(np.float64)
 
         null_pct = pattern.get("null_pct", 0) / 100.0
@@ -64,7 +66,7 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
             if related_col and related_col in df.columns:
                 # If related column has values in the extreme, null more often
                 try:
-                    if np.issubdtype(df[related_col].dtype, np.number):
+                    if pd.api.types.is_numeric_dtype(df[related_col].dtype):
                         series = df[related_col].fillna(df[related_col].median())
                         # Higher values → more likely null
                         spread = max(series.max() - series.min(), 1)
@@ -82,7 +84,7 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
 
         elif missing_type == "MNAR":
             # Missing correlated with own extreme values
-            if np.issubdtype(df[col].dtype, np.number):
+            if pd.api.types.is_numeric_dtype(df[col].dtype):
                 try:
                     series = df[col].fillna(df[col].median())
                     z_scores = np.abs((series - series.mean()) / max(series.std(), 1e-6))
@@ -116,8 +118,8 @@ def inject_outliers(df, profile: dict, rng: Optional[np.random.Generator] = None
     for col, pattern in outlier_patterns.items():
         if col not in df.columns:
             continue
-        if not np.issubdtype(df[col].dtype, np.floating):
-            if np.issubdtype(df[col].dtype, np.integer):
+        if not pd.api.types.is_float_dtype(df[col].dtype):
+            if pd.api.types.is_integer_dtype(df[col].dtype):
                 df[col] = df[col].astype(np.float64)
             else:
                 continue
@@ -166,8 +168,8 @@ def inject_noise(df, profile: dict, rng: Optional[np.random.Generator] = None) -
     for col, pattern in noise_patterns.items():
         if col not in df.columns:
             continue
-        if not np.issubdtype(df[col].dtype, np.floating):
-            if np.issubdtype(df[col].dtype, np.integer):
+        if not pd.api.types.is_float_dtype(df[col].dtype):
+            if pd.api.types.is_integer_dtype(df[col].dtype):
                 df[col] = df[col].astype(np.float64)
             else:
                 continue

@@ -254,7 +254,13 @@ class KnowledgeGraph:
                WHERE cache_key=? AND expires_at > datetime('now')""",
             (_hash_key(key),),
         )
-        return json.loads(row[0]) if row else None
+        if not row:
+            return None
+        try:
+            return json.loads(row[0])
+        except (json.JSONDecodeError, TypeError):
+            logger.warning("Corrupt cache entry for key %s, returning None", key[:16])
+            return None
 
     def llm_cache_set(self, key: str, response: dict,
                       model: str = "", ttl_days: int = 30) -> None:

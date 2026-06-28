@@ -75,7 +75,7 @@ def generate_dataset(kg: KnowledgeGraph,
                      n_rows: int = 100,
                      custom_schema: Optional[list[dict]] = None,
                      inject_imperfections: bool = True,
-                     seed: Optional[int] = None) -> pd.DataFrame:
+                     seed: Optional[int] = 42) -> pd.DataFrame:
     """Full generation pipeline: schema → generate → inject → return.
 
     Args:
@@ -91,8 +91,8 @@ def generate_dataset(kg: KnowledgeGraph,
     try:
         rng = np.random.default_rng(seed)
 
-        # Step 1: Get schema
-        schema = custom_schema or schema_from_kg(kg, domain_name)
+        # Step 1: Get schema — None means KG lookup, explicit [] means empty
+        schema = schema_from_kg(kg, domain_name) if custom_schema is None else custom_schema
         if not schema:
             schema = _generic_schema(domain_name)
         if not schema:

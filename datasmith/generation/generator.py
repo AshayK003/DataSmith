@@ -219,6 +219,10 @@ def generate_from_schema(columns: list[dict], n: int,
         name = col.get("column_name", "col")
         dtype = col.get("data_type", "text")
         col_data = generate_column(name, dtype, col, n, rng)
-        data[name] = col_data
+        # Ensure text columns use object dtype, not pandas StringDtype
+        if dtype in ("text", "string") and hasattr(col_data, "dtype") and col_data.dtype == np.dtype("O"):
+            data[name] = pd.array(col_data, dtype=object)
+        else:
+            data[name] = col_data
 
     return pd.DataFrame(data)

@@ -188,8 +188,9 @@ def discover_schema(
 
     # ── Step 1: KG Hit ─────────────────────────────────────────────
     # Check if the input directly names a known domain
+    # Use word-boundary matching to avoid false positives (e.g. "finance" in "financing")
     for domain_name in SEED_DOMAINS:
-        if domain_name in input_lower or input_lower.startswith(domain_name):
+        if re.search(rf'\b{re.escape(domain_name)}\b', input_lower) or input_lower.startswith(domain_name):
             logger.info("KG hit for domain '%s'", domain_name)
             schema = schema_from_kg(kg, domain_name)
             if schema:

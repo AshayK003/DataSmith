@@ -13,7 +13,6 @@ import os
 import time
 from typing import Optional
 
-import kagglehub
 import requests
 
 from datasmith.schema.knowledge_graph import KnowledgeGraph
@@ -250,6 +249,7 @@ def _store_schema(kg: KnowledgeGraph, dataset: DatasetSchema,
 def _crawl_kaggle(kg: KnowledgeGraph, dataset_slug: str,
                   dataset_name: str, domain_id: int) -> Optional[int]:
     """Download and process a Kaggle dataset. Returns dataset_id or None."""
+    import kagglehub  # lazy import — kagglehub is heavy and optional
     logger.info("Kaggle: %s (%s)", dataset_slug, dataset_name)
     try:
         path = kagglehub.dataset_download(dataset_slug)

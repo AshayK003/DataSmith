@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.4.1 (2026-06-28)
+
+### Fixed
+
+- **pandas StringDtype compatibility** — `np.issubdtype()` crashes on pandas extension dtypes (StringDtype, etc.) in numpy 2.x. Replaced all dtype checks in the imperfection injector with `pd.api.types` equivalents. The generator also ensures text columns use `object` dtype. Fixes 22 failing tests.
+- **Lazy kagglehub import** — moved `import kagglehub` from module-level to inside `_crawl_kaggle()`, so test collection and cold-start imports no longer require kagglehub to be installed.
+- **Word-boundary domain matching** — `discovery.py` now uses `\b` word boundaries instead of substring matching, preventing false positives like "finance" matching "financing data" or "energy" matching "energy drinks".
+- **Empty custom_schema now respected** — `generate_dataset(custom_schema=[])` no longer falls through to KG lookup. Pass `None` for KG fallback, `[]` for no columns.
+- **LLM cache corruption guard** — `llm_cache_get()` now wraps `json.loads()` in try/except, returning None on corruption instead of crashing the discovery pipeline.
+- **Extension dtype safety in analyzer** — `_is_numeric()` wraps `np.issubdtype` in TypeError guard to handle StringDtype and other extension dtypes.
+- **Ensured frictionless installed** — was missing in the active venv, blocking test collection.
+
 ## v0.4.0 (2026-06-28)
 
 ### Added
