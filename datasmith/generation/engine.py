@@ -16,8 +16,11 @@ from datasmith.imperfections.profiles import load_profile_from_kg
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.schema.enricher import enrich_schema
 from datasmith.generation.generator import generate_from_schema
+from datasmith.quality.validator import validate
 
 logger = logging.getLogger(__name__)
+
+MAX_VALIDATION_RETRIES = 3
 
 
 def schema_from_kg(kg: KnowledgeGraph, domain_name: str) -> list[dict]:
@@ -77,7 +80,7 @@ def generate_dataset(kg: KnowledgeGraph,
                      custom_schema: Optional[list[dict]] = None,
                      inject_imperfections: bool = True,
                      seed: Optional[int] = 42) -> pd.DataFrame:
-    """Full generation pipeline: schema → generate → inject → return.
+    """Full generation pipeline: schema → generate → inject → validate → return.
 
     Args:
         kg: KnowledgeGraph instance.
@@ -88,10 +91,12 @@ def generate_dataset(kg: KnowledgeGraph,
         seed: Random seed for reproducibility.
 
     Returns Generated DataFrame.
+
+    Note: after generation the output is validated against the schema.
+    If validation fails, the pipeline retries with incremented seeds
+    (up to MAX_VALIDATION_RETRIES times).
     """
     try:
-        rng = np.random.default_rng(seed)
-
         # Step 1: Get schema — None means KG lookup, explicit [] means empty
         schema = schema_from_kg(kg, domain_name) if custom_schema is None else custom_schema
         if not schema:
@@ -102,16 +107,48 @@ def generate_dataset(kg: KnowledgeGraph,
         # Step 1.5: Enrich schema with semantic constraints
         schema = enrich_schema(schema)
 
-        # Step 2: Generate
-        df = generate_from_schema(schema, n_rows, rng)
+        # Steps 2-4: Generate → Inject → Validate (with retries)
+        best_df = None
+        last_result = None
 
-        # Step 3: Inject imperfections
-        if inject_imperfections:
-            profile = load_profile_from_kg(kg, domain_name)
-            if profile:
-                apply_profile(df, profile, rng)
+        for attempt in range(MAX_VALIDATION_RETRIES + 1):
+            current_seed = seed + attempt if attempt > 0 else seed
+            rng = np.random.default_rng(current_seed)
 
-        return df
+            # Step 2: Generate
+            df = generate_from_schema(schema, n_rows, rng)
+
+            # Step 3: Inject imperfections
+            if inject_imperfections:
+                profile = load_profile_from_kg(kg, domain_name)
+                if profile:
+                    apply_profile(df, profile, rng)
+
+            # Step 4: Validate
+            result = validate(df, schema)
+            best_df = df
+            last_result = result
+
+            if result.passed:
+                if attempt > 0:
+                    logger.info("Validation passed on retry %d (seed=%d)", attempt, current_seed)
+                return df
+
+            logger.warning(
+                "Validation failed on attempt %d (seed=%d): %d issue(s)",
+                attempt + 1, current_seed, len(result.errors),
+            )
+            if attempt < MAX_VALIDATION_RETRIES:
+                logger.info("Retrying with seed=%d...", current_seed + 1)
+
+        # All retries exhausted — log and return best attempt
+        logger.warning(
+            "Validation failed after %d attempts. "
+            "Returning best effort. Issues:\n%s",
+            MAX_VALIDATION_RETRIES + 1, last_result.summary if last_result else "unknown",
+        )
+        return best_df if best_df is not None else pd.DataFrame()
+
     except Exception:
         logger.exception("Dataset generation failed")
         raise RuntimeError("An internal error occurred during generation.")

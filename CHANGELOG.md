@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.6.0 (2026-06-28)
+
+### Added
+
+- **Quality Validator** — new module `datasmith/quality/validator.py` that validates generated DataFrames against column schema. Runs 5 quality checks on every generation:
+  - **Integer check** — columns typed as `integer` must have no fractional values
+  - **Bounds check** — values stay within declared `min`/`max` ranges
+  - **Null check** — flags columns that are entirely null
+  - **Format check** — email columns must contain `@`, phone columns must have 5+ digits
+  - **Diversity check** — text columns must not all be identical (catches generation failures)
+- **Auto-retry in `generate_dataset()`** — after generation, the pipeline validates the output and retries with an incremented seed (up to 3 attempts) if quality gates fail. The best-effort result is returned even if all retries are exhausted.
+- **`ValidationResult` and `ValidationError`** — public data classes for inspecting validation results programmatically.
+- **22 new tests** covering all validator checks, edge cases (extension dtypes, nulls, missing columns), and integration with the generation pipeline.
+
 ## v0.5.0 (2026-06-28)
 
 ### Added
