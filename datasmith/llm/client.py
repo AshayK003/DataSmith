@@ -32,7 +32,7 @@ _PROVIDERS: dict[str, dict] = {
     },
 }
 
-_DEFAULT_PROVIDER = "groq"
+_DEFAULT_PROVIDER = "gemini"
 
 
 def get_config(

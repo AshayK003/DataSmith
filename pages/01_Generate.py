@@ -93,23 +93,27 @@ with discover_tab:
             "API Key",
             type="password",
             key="_llm_key_input",
-            help="e.g., gsk_xxx for Groq, sk-xxx for OpenAI-compatible",
+            help=(
+                "e.g., Groq: gsk_xxx, "
+                "Gemini: Google AI Studio key, "
+                "OpenAI: sk-xxx"
+            ),
         )
         _llm_base = st.text_input(
             "Base URL",
-            placeholder="https://api.groq.com/openai/v1",
+            placeholder="https://generativelanguage.googleapis.com/v1beta/openai",
             key="_llm_base_input",
             help=(
-                "Leave empty for default (Groq). Common: "
-                "https://openrouter.ai/api/v1, "
-                "https://generativelanguage.googleapis.com/v1beta/openai"
+                "Leave empty for default (Gemini). Common: "
+                "https://api.groq.com/openai/v1, "
+                "https://openrouter.ai/api/v1"
             ),
         )
         _llm_model = st.text_input(
             "Model",
-            placeholder="llama-3.3-70b-versatile",
+            placeholder="gemini-2.0-flash",
             key="_llm_model_input",
-            help="Leave empty for default (Groq's llama-3.3-70b).",
+            help="Leave empty for default (Gemini 2.0 Flash).",
         )
 
 with browse_tab:
