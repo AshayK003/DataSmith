@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.9.0 (2026-06-28)
+
+### Added
+
+- **LLM Critique Layer** — new module `datasmith/llm/critique.py` that audits generated datasets against the original user prompt before displaying results. When an LLM is available and the user described their dataset in natural language, the critique:
+  - Reviews every column for relevance to the original request
+  - Drops extra columns not in the prompt that aren't useful context
+  - Fixes data type mismatches (e.g. retying "quantity" from numeric to integer)
+  - Clamps unrealistic values (e.g. age > 150, negative prices)
+  - Renames unclear column names to be more professional
+  - Returns a structured critique summary alongside the cleaned DataFrame
+  - Falls back gracefully — if LLM is unavailable, the dataset is returned unchanged
+- **`user_prompt` parameter** on `generate_dataset()` and `batched_generate()` — when provided, triggers the critique layer. The frontend passes the NL description automatically.
+
+### Changed
+
+- Generation pipeline is now: `schema → enrich → generate → correlate → inject → **critique** → validate → return`
+- In batched mode, critique runs **once** on the final concatenated result (not per batch) for efficiency.
+
 ## v0.8.0 (2026-06-28)
 
 ### Fixed

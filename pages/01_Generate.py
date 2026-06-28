@@ -199,6 +199,7 @@ if use_nl and nl_input:
                 st.session_state["_resolved_schema"] = resolved
                 st.session_state["_resolved_schema_ver"] += 1
                 st.session_state["_schema_source"] = f"Description: _{nl_input}_"
+                st.session_state["_user_prompt"] = nl_input
                 st.session_state["active_domain"] = nl_input[:40]
             else:
                 st.warning(
@@ -434,6 +435,15 @@ if resolved_schema:
 
         with st.status("Generating dataset...", expanded=True) as status:
             try:
+                # Build LLM config for critique from session state
+                _critique_config = {
+                    "api_key": st.session_state.get("_llm_key_input", ""),
+                    "base_url": st.session_state.get("_llm_base_input", ""),
+                    "model": st.session_state.get("_llm_model_input", ""),
+                }
+                # Use the NL description as the user prompt for critique
+                _user_prompt = st.session_state.get("_user_prompt", "")
+
                 if use_iterative:
                     status.update(
                         label=f"Generating {n_rows} rows from {len(edited)} columns "
@@ -446,6 +456,8 @@ if resolved_schema:
                         total_rows=n_rows,
                         custom_schema=edited,
                         inject_imperfections=inject_imperfections,
+                        user_prompt=_user_prompt,
+                        llm_config=_critique_config,
                     )
                 else:
                     status.update(
@@ -458,6 +470,8 @@ if resolved_schema:
                         n_rows=n_rows,
                         custom_schema=edited,
                         inject_imperfections=inject_imperfections,
+                        user_prompt=_user_prompt,
+                        llm_config=_critique_config,
                     )
 
                 status.update(label="Done!", state="complete")

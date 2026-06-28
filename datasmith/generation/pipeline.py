@@ -42,6 +42,8 @@ def batched_generate(
     quality_threshold: float = _DEFAULT_QUALITY_THRESHOLD,
     max_retries: int = _DEFAULT_MAX_RETRIES,
     seed: Optional[int] = None,
+    user_prompt: str = "",
+    llm_config: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Generate a dataset using iterative batched generation with quality feedback.
 
@@ -65,6 +67,8 @@ def batched_generate(
         quality_threshold: Minimum quality_score (0–1) to accept a batch.
         max_retries: Max regeneration attempts per batch.
         seed: Random seed for reproducibility.
+        user_prompt: Original NL description for LLM critique (optional).
+        llm_config: Optional dict with api_key, base_url, model for critique.
 
     Returns Generated DataFrame with all batches concatenated.
     """
@@ -152,6 +156,20 @@ def batched_generate(
         float(np.mean([q.get("quality_score", 0) for q in quality_log])),
         total_retries,
     )
+
+    # Step 6: LLM critique on final dataset (runs once, not per batch)
+    if user_prompt:
+        from datasmith.llm.critique import critique_dataset
+        result, critique_summary = critique_dataset(
+            user_prompt=user_prompt,
+            schema=current_schema,
+            df=result,
+            api_key=(llm_config or {}).get("api_key", ""),
+            base_url=(llm_config or {}).get("base_url", ""),
+            model=(llm_config or {}).get("model", ""),
+        )
+        if critique_summary:
+            logger.info("Critique: %s", critique_summary[:200])
 
     return result
 

@@ -71,6 +71,13 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 │                           │ outliers, │      │
 │                           │ noise)    │      │
 │                           └────┬──────┘      │
+│                                 │             │
+│                           ┌────▼──────┐      │
+│                           │ Critique  │      │
+│                           │(LLM audit │      │
+│                           │ vs prompt,│      │
+│                           │ drop/fix) │      │
+│                           └────┬──────┘      │
 │                                │              │
 │                           ┌────▼──────┐      │
 │                           │ Validator │      │
@@ -107,6 +114,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 | **Schema Enricher** | Maps column names to semantic types (year→integer, email→email-generator), injects missing constraints (min/max, distribution hints), and sets semantic descriptions | `schema/enricher.py` |
 | **Correlation Engine** | Induces pairwise column correlations via Iman-Conover rank-matching — reorders values to match target rho while preserving marginal distributions | `generation/correlator.py` |
 | **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime) | `generation/generator.py` |
+| **Critique** | LLM-powered audit that reviews generated data against the original prompt, drops extra columns, fixes types, clamps unrealistic values | `llm/critique.py` |
 | **Knowledge Graph** | SQLite-backed schema store with FTS5 search — domains, datasets, column schemas, LLM cache, imperfection profiles | `schema/knowledge_graph.py` |
 | **Crawler** | Multi-source schema extraction from Kaggle, UCI Archive, and direct CSV URLs | `schema/crawler.py` |
 | **Quality Validator** | Post-generation validation: integer-column fraction check, bounds enforcement, email format, null integrity, diversity gate — auto-retries on failure | `quality/validator.py` |
@@ -141,6 +149,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ├── llm/
 │   ├── client.py             # OpenAI-compatible API client
 │   ├── discovery.py          # NL → schema discovery pipeline
+│   ├── critique.py           # LLM audit of generated data vs original prompt
 │   └── schemas.py            # Pydantic response models
 └── ui/
     ├── components.py         # Shared UI components (header, cards)

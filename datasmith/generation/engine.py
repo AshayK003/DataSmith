@@ -18,6 +18,7 @@ from datasmith.schema.enricher import enrich_schema
 from datasmith.generation.generator import generate_from_schema
 from datasmith.generation.correlator import apply_correlations
 from datasmith.quality.validator import validate
+from datasmith.llm.critique import critique_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +82,10 @@ def generate_dataset(kg: KnowledgeGraph,
                      custom_schema: Optional[list[dict]] = None,
                      inject_imperfections: bool = True,
                      correlations: Optional[list[dict]] = None,
-                     seed: Optional[int] = 42) -> pd.DataFrame:
-    """Full generation pipeline: schema → generate → correlate → inject → validate → return.
+                     seed: Optional[int] = 42,
+                     user_prompt: str = "",
+                     llm_config: Optional[dict] = None) -> pd.DataFrame:
+    """Full generation pipeline: schema → generate → correlate → inject → critique → validate → return.
 
     Args:
         kg: KnowledgeGraph instance.
@@ -94,6 +97,12 @@ def generate_dataset(kg: KnowledgeGraph,
             Each dict has ``col_a``, ``col_b``, ``rho``.
             Example: ``[{"col_a": "price", "col_b": "quantity", "rho": 0.85}]``
         seed: Random seed for reproducibility.
+        user_prompt: Original NL description from the user. When provided
+            and an LLM is available, the generated dataset is critiqued
+            against the prompt — extra columns are dropped, type mismatches
+            fixed, and unrealistic values clamped.
+        llm_config: Optional dict with ``api_key``, ``base_url``, ``model``
+            for the critique LLM call.
 
     Returns Generated DataFrame.
 
@@ -101,6 +110,7 @@ def generate_dataset(kg: KnowledgeGraph,
     If validation fails, the pipeline retries with incremented seeds
     (up to MAX_VALIDATION_RETRIES times).
     """
+    llm_cfg = llm_config or {}
     try:
         # Step 1: Get schema — None means KG lookup, explicit [] means empty
         schema = schema_from_kg(kg, domain_name) if custom_schema is None else custom_schema
@@ -132,6 +142,19 @@ def generate_dataset(kg: KnowledgeGraph,
                 profile = load_profile_from_kg(kg, domain_name)
                 if profile:
                     apply_profile(df, profile, rng)
+
+            # Step 3.5: LLM critique (only on final attempt or first pass)
+            if user_prompt and attempt == 0:
+                df, critique_summary = critique_dataset(
+                    user_prompt=user_prompt,
+                    schema=schema,
+                    df=df,
+                    api_key=llm_cfg.get("api_key", ""),
+                    base_url=llm_cfg.get("base_url", ""),
+                    model=llm_cfg.get("model", ""),
+                )
+                if critique_summary:
+                    logger.info("Critique: %s", critique_summary[:200])
 
             # Step 4: Validate
             result = validate(df, schema)
