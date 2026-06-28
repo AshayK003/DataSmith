@@ -45,7 +45,7 @@ st.divider()
 
 st.markdown(
     "<p style='text-align: center; color: var(--ds-text-muted);'>"
-    "DataSmith v0.3.9 -- Built by Ashay Kushwaha<br>"
+    "DataSmith v0.4.0 -- Built by Ashay Kushwaha<br>"
     "License: AGPL v3 -- <a href='https://github.com/AshayK003/DataSmith'>GitHub</a></p>",
     unsafe_allow_html=True,
 )

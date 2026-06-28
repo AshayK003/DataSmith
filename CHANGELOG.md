@@ -1,6 +1,18 @@
 # Changelog
 
-## v0.3.9 (2026-06-28)
+## v0.4.0 (2026-06-28)
+
+### Added
+
+- **LLM provider presets** — dropdown in the Generate page's LLM Configuration expander that auto-fills the Base URL and Model for Gemini, Groq, OpenRouter, and OpenCode Zen. Just select your provider and paste your API key. Custom option for manual entry.
+- **Custom API key input in frontend** — password field, base URL, and model fields in an `st.expander` on the Generate page. Users can enter any OpenAI-compatible API key at runtime without setting environment variables. Overrides env-var config for the session.
+- **Provider retry fallback** — `chat_complete()` now retries the API call without `response_format` if the first attempt fails. Handles providers (like Gemini and OpenCode Zen) that don't support JSON-mode structured output.
+- **Robust JSON parsing** — `_parse_llm_response()` handles markdown fences anywhere in the response, extra commentary around JSON, and falls back to searching for any `{...}` block that validates against the Pydantic schema.
+
+### Fixed
+
+- **Gemini quota errors now logged** — the actual API response body (status code + message) is included in the log output when an LLM request fails, making it easy to diagnose quota exhaustion, invalid keys, or unsupported parameters.
+- **`null` keys stripped from retry body** — `{"response_format": null}` was sent in the retry body (could confuse picky providers). Now `None`-valued keys are removed entirely before serialization.
 
 ### Added
 

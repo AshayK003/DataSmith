@@ -139,14 +139,13 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 
 | Variable | Required | Default | Purpose |
 |----------|----------|---------|---------|
-| `LLM_API_KEY` | No | — | API key for NL → schema discovery |
-| `LLM_BASE_URL` | No | Groq endpoint | Base URL for OpenAI-compatible LLM API |
-| `LLM_MODEL` | No | Groq's `llama-3.3-70b-versatile` | Model name |
-| `LLM_PROVIDER` | No | `groq` | Provider key for routing |
+| `LLM_API_KEY` | No | — | Catch-all API key for NL → schema discovery |
+| `LLM_BASE_URL` | No | Gemini endpoint | Base URL for OpenAI-compatible LLM API |
+| `LLM_MODEL` | No | Gemini's `gemini-2.0-flash` | Model name |
 
 No env vars needed for generation. Only required if using the **Natural Language → Schema** feature (it requires an LLM provider).
 
-Supported providers: `groq`, `openrouter`, `gemini`. All use the same OpenAI-compatible `/chat/completions` format.
+Alternatively, configure your LLM provider in the UI — open the **LLM Configuration** expander on the Generate page, select your provider from the preset dropdown (Gemini, Groq, OpenRouter, OpenCode Zen, or Custom), paste your API key, and go. The UI config overrides any env-var settings for the session.
 
 ---
 
