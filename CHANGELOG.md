@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.5.0 (2026-06-28)
+
+### Added
+
+- **Semantic Schema Enricher** — new module `datasmith/schema/enricher.py` that enriches raw column schemas with semantic constraints. Integrated into `generate_dataset()` between schema resolution and generation. Automatically:
+  - Sets `data_type="integer"` for year, age, quantity, and count columns (was "numeric", producing decimals)
+  - Sets `data_type="numeric"` with `distribution_hint="powerlaw"` for price/amount columns
+  - Sets distribution hints, min/max ranges, and mean/std for known column types
+  - Adds semantic descriptions that help text_profiles match email, phone, name, and ID columns
+
+### Changed
+
+- **`enrich_schema(columns)`** — public API for enriching column schemas. Takes a list of column dicts, returns enriched copies. Only fills missing constraints; always overrides `data_type` when a semantic pattern matches (since pattern-based inference is more accurate than LLM's generic "numeric" output).
+
+### Fixed
+
+- **Years, ages, quantities no longer have decimal values** — the enricher assigns `data_type="integer"` to semantic integer columns, and the generator now produces `int64` arrays for these types instead of `float64`.
+
 ## v0.4.2 (2026-06-28)
 
 ### Fixed

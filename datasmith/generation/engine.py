@@ -14,6 +14,7 @@ import pandas as pd
 from datasmith.imperfections.injector import apply_profile
 from datasmith.imperfections.profiles import load_profile_from_kg
 from datasmith.schema.knowledge_graph import KnowledgeGraph
+from datasmith.schema.enricher import enrich_schema
 from datasmith.generation.generator import generate_from_schema
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,9 @@ def generate_dataset(kg: KnowledgeGraph,
             schema = _generic_schema(domain_name)
         if not schema:
             raise ValueError(f"No schema found for domain '{domain_name}'")
+
+        # Step 1.5: Enrich schema with semantic constraints
+        schema = enrich_schema(schema)
 
         # Step 2: Generate
         df = generate_from_schema(schema, n_rows, rng)
