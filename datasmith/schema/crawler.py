@@ -2,8 +2,7 @@
 
 Sources (in priority order):
 1. Kaggle (via kagglehub — no auth needed for public datasets)
-2. HuggingFace Datasets (via requests — free, no auth for public)
-3. Direct CSV URLs (UCI, open-data portals)
+2. Direct CSV URLs (UCI, open-data portals)
 
 Every source gets wrapped in try/except — failures are logged, never fatal.
 """
@@ -40,9 +39,7 @@ SEED_DOMAINS = {
 # Datasets keyed by domain. Each entry: (source, identifier, label)
 # source: "kaggle" | "url"
 #   Kaggle needs auth (set KAGGLE_USERNAME + KAGGLE_KEY env vars)
-#   URL sources are direct CSV/Excel/ZIP links (no auth needed)
-# HuggingFace sources temporarily disabled — most free-tier datasets
-# use Parquet/Arrow, not CSV. Will re-enable when CSV pipeline is ready.
+# URL sources are direct CSV/Excel/ZIP links (no auth needed)
 SEED_DATASETS: dict[str, list[tuple[str, str, str]]] = {
     "e-commerce": [
         ("kaggle", "olistbr/brazilian-ecommerce", "Brazilian E-Commerce"),
@@ -346,7 +343,7 @@ def seed_knowledge_graph(kg: KnowledgeGraph,
     Args:
         kg: KnowledgeGraph instance.
         datasets: Domain → [(source, identifier, label), ...] mapping.
-                  source: "kaggle" | "huggingface" | "url"
+                  source: "kaggle" | "url"
         delay: Seconds between crawls to respect rate limits.
 
     Returns: {domain: {display_name: "ok"|"skipped"|"failed"}}

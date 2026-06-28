@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 def _is_numeric(series) -> bool:
     """Check if a pandas series is numeric (not datetime, not object)."""
-    import pandas as pd
     dtype = series.dtype
     return np.issubdtype(dtype, np.number) and not pd.api.types.is_bool_dtype(series)
 
@@ -346,7 +345,6 @@ def analyze_csv(file_path: str, domain_name: str = "",
 
     Returns imperfection fingerprint dict, or None on failure.
     """
-    import pandas as pd
     try:
         df = pd.read_csv(file_path, **kwargs)
     except Exception as e:
