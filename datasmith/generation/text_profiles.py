@@ -14,17 +14,28 @@ import numpy as np
 
 # ── Word banks ──────────────────────────────────────────────────────────────
 
-CITIES_IN = [
+CITIES = [
     "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata",
     "Pune", "Ahmedabad", "Jaipur", "Lucknow", "Surat", "Chandigarh",
     "Indore", "Bhopal", "Nagpur", "Thane", "Visakhapatnam", "Patna",
     "Vadodara", "Guwahati", "Coimbatore", "Kochi", "Mysore", "Nashik",
     "Agra", "Varanasi", "Ranchi", "Bhubaneswar", "Amritsar", "Dehradun",
-]
-
-CITIES_WORLD = [
     "New York", "London", "Tokyo", "Dubai", "Singapore", "Sydney",
     "Paris", "Berlin", "Toronto", "San Francisco", "Shanghai", "Seoul",
+    "Rome", "Madrid", "Amsterdam", "Bangkok", "Vienna", "Prague",
+    "Oslo", "Stockholm", "Copenhagen", "Helsinki", "Zurich", "Munich",
+    "Milan", "Barcelona", "Lisbon", "Dublin", "Edinburgh", "Athens",
+    "Istanbul", "Moscow", "Beijing", "Hong Kong", "Kuala Lumpur", "Jakarta",
+    "Manila", "Ho Chi Minh City", "Lahore", "Dhaka", "Cairo",
+    "Casablanca", "Nairobi", "Cape Town", "Lagos", "Sao Paulo",
+    "Buenos Aires", "Lima", "Bogota", "Santiago", "Mexico City",
+    "Los Angeles", "Chicago", "Houston", "Seattle", "Boston",
+    "Warsaw", "Budapest", "Bucharest", "Kiev", "Bratislava",
+    "Reykjavik", "Tallinn", "Vilnius", "Riga", "Ljubljana",
+    "Montevideo", "Panama City", "San Jose", "San Juan", "Quito",
+    "Auckland", "Wellington", "Perth", "Melbourne", "Brisbane",
+    "Hamburg", "Frankfurt", "Stuttgart", "Dusseldorf", "Cologne",
+    "Lyon", "Marseille", "Nice", "Toulouse", "Bordeaux",
 ]
 
 MERCHANT_CATEGORIES = [
@@ -32,30 +43,52 @@ MERCHANT_CATEGORIES = [
     "Pharmacy", "Entertainment", "Utilities", "Travel", "Healthcare",
     "Ecommerce", "Education", "Insurance", "Telecom", "Transport",
     "Furniture", "Jewelry", "Sports", "Books", "Hardware",
+    "Automotive", "Beauty", "Home Improvement", "Pet Supplies", "Office Supplies",
+    "Agriculture", "Legal Services", "Consulting", "Real Estate", "Logistics",
 ]
 
 PAYMENT_METHODS = [
     "Credit Card", "Debit Card", "UPI", "Net Banking", "Cash",
     "Wallet", "EMI", "NEFT", "RTGS", "Cheque",
+    "Google Pay", "Apple Pay", "PayPal", "Cryptocurrency", "Bank Transfer",
 ]
 
-FRAUD_LABELS = ["No", "Yes"]  # weighted ~95/5 below
+FRAUD_LABELS = ["No", "Yes"]
 
-FIRST_NAMES_IN = [
+FIRST_NAMES = [
     "Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Sai", "Reyansh",
     "Ayaan", "Ishaan", "Shaurya", "Ananya", "Diya", "Myra", "Aanya",
     "Advika", "Prisha", "Ishita", "Navya", "Aaradhya", "Sara",
+    "Oliver", "Emma", "Liam", "Sophia", "Noah", "Isabella", "Ethan",
+    "Mia", "Lucas", "Charlotte", "James", "Amelia", "Benjamin",
+    "Harper", "Elijah", "Evelyn", "William", "Abigail", "Henry",
+    "Emily", "Alexander", "Ella", "Daniel", "Avery", "Michael",
+    "Scarlett", "Sebastian", "Grace", "Jack", "Chloe", "Owen",
+    "Victoria", "Samuel", "Riley", "David", "Aria", "Joseph",
+    "Lily", "John", "Zoey", "Leo", "Penelope", "Gabriel",
 ]
 
 LAST_NAMES = [
     "Sharma", "Verma", "Patel", "Kumar", "Singh", "Gupta", "Reddy",
     "Joshi", "Nair", "Menon", "Iyer", "Deshmukh", "Das", "Choudhury",
     "Bose", "Sen", "Malhotra", "Kapoor", "Agarwal", "Mehta",
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia",
+    "Miller", "Davis", "Rodriguez", "Martinez", "Wilson", "Anderson",
+    "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee",
+    "Thompson", "White", "Harris", "Clark", "Lewis", "Robinson",
+    "Walker", "Young", "Allen", "King", "Wright", "Scott",
+    "Torres", "Nguyen", "Hill", "Flores", "Green", "Adams",
+    "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
+    "Carter", "Roberts", "Gomez", "Phillips", "Evans", "Turner",
 ]
 
-STATUSES = ["Active", "Inactive", "Pending", "Suspended", "Completed", "Failed"]
+STATUSES = ["Active", "Inactive", "Pending", "Suspended", "Completed", "Failed",
+            "Approved", "Rejected", "Processing", "Cancelled", "On Hold", "Delivered"]
+
 GENDERS = ["Male", "Female", "Other"]
 RATING_LABELS = ["1", "2", "3", "4", "5"]
+BOOLEAN_YESNO = ["Yes", "No"]
+
 COUNTRIES = [
     "India", "USA", "UK", "Canada", "Australia", "Germany", "Japan", "UAE",
     "Brazil", "Mexico", "France", "Italy", "Spain", "Netherlands", "Sweden",
@@ -85,11 +118,49 @@ COUNTRIES = [
     "Liberia", "Sierra Leone", "Togo", "Eritrea", "Djibouti", "Burundi",
     "Lesotho", "Eswatini", "Timor-Leste", "Solomon Islands", "Vanuatu",
     "Samoa", "Tonga", "Palau", "Micronesia", "Marshall Islands",
+    "Antarctica", "Greenland", "New Caledonia", "French Polynesia", "Bermuda",
+    "Cayman Islands", "Aruba", "Monaco", "Liechtenstein", "San Marino",
 ]
-CATEGORIES_ABC = ["A", "B", "C", "D"]
-BOOLEAN_YESNO = ["Yes", "No"]
+
+CATEGORIES_ABC = ["A", "B", "C", "D", "E", "F"]
+
 EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
-                 "rediffmail.com", "proton.me"]
+                 "rediffmail.com", "proton.me", "icloud.com", "aol.com",
+                 "zoho.com", "mail.com", "fastmail.com", "gmx.com"]
+
+COMPANIES = [
+    "Acme Corp", "TechVista", "DataFlow Inc", "CloudPeak Systems",
+    "NovaWorks", "BrightPath Solutions", "Quantum Software", "Pinnacle Group",
+    "Summit Analytics", "Vertex Technologies", "Horizon Labs", "Meridian Corp",
+    "Atlas Innovations", "Catalyst Partners", "Ridgeway Industries",
+    "Peak Performance Inc", "NorthStar Consulting", "Titan Machinery",
+    "Evergreen Solutions", "Pacific Rim Trading", "Sapphire Systems",
+    "Cobalt Technologies", "Apex Digital", "Orion Networks", "Vanguard Corp",
+]
+
+JOB_TITLES = [
+    "Software Engineer", "Data Analyst", "Product Manager", "Sales Executive",
+    "Marketing Manager", "Operations Lead", "Financial Analyst", "HR Specialist",
+    "Customer Success Manager", "Business Analyst", "DevOps Engineer",
+    "UX Designer", "Content Writer", "Account Executive", "Project Manager",
+    "Research Scientist", "Accountant", "Legal Counsel", "Support Engineer",
+    "Solutions Architect", "Data Scientist", "Engineering Manager",
+    "Technical Writer", "QA Engineer", "Product Designer",
+]
+
+DEPARTMENTS = [
+    "Engineering", "Sales", "Marketing", "Finance", "HR",
+    "Operations", "Support", "Legal", "Product", "Research",
+    "Design", "Data", "Security", "Infrastructure", "Analytics",
+]
+
+PRODUCTS = [
+    "CloudSync Pro", "DataPulse", "SecureVault", "FlowManager",
+    "InsightBoard", "ConnectHub", "TaskForce", "Analytix",
+    "CyberGuard", "SmartOps", "Velocity CRM", "PixelStudio",
+    "TalentScout", "InvoiceFlow", "CampaignPro",
+]
+
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -99,7 +170,6 @@ def _id_generator(prefix: str, digits: int = 5) -> Callable:
     fmt = f"{prefix}-{{:0{digits}d}}"
 
     def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
-        # Random offsets so IDs aren't sequential 1,2,3
         ids = rng.integers(1, 10**digits, size=n)
         return np.array([fmt.format(i) for i in ids])
 
@@ -114,20 +184,67 @@ def _categorical_list(items: list[str], weights: list[float] | None = None
     return _gen
 
 
+def _sentence_generator() -> Callable:
+    """Return a generator that produces varied descriptive text.
+
+    Used as a catch-all for unknown text columns to avoid the
+    "Placeholder 1, Placeholder 2" look. Generates realistic-sounding
+    short sentences from random template combinations.
+    """
+    subjects = [
+        "The system", "This process", "The request", "The application",
+        "Our platform", "The service", "The operation", "This task",
+        "The transaction", "The record", "The entry", "This account",
+    ]
+    verbs = [
+        "requires", "processes", "handles", "manages", "generates",
+        "produces", "supports", "triggers", "initiates", "completes",
+        "validates", "confirms", "updates", "maintains", "schedules",
+    ]
+    objects = [
+        "high-priority orders", "customer requests", "data records",
+        "payment transactions", "system updates", "user profiles",
+        "inventory items", "service tickets", "compliance checks",
+        "quality reviews", "batch operations", "scheduled tasks",
+        "automated workflows", "processing pipelines", "access requests",
+    ]
+    qualifiers = [
+        "via API", "on demand", "in real-time", "per schedule",
+        "through web interface", "automatically", "manually",
+        "with approval", "in background", "via batch",
+    ]
+
+    # Pre-compose 180 unique patterns
+    _patterns = [
+        f"{s} {v} {o} {q}."
+        for s in subjects
+        for v in verbs[:5]
+        for o in objects[:3]
+        for q in qualifiers[:3]
+    ][:180]  # Keep it manageable
+
+    def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
+        picks = rng.integers(0, len(_patterns), size=n)
+        return np.array([_patterns[int(i)] for i in picks])
+
+    return _gen
+
+
+_gen_sentence = _sentence_generator()
+
+
 def _template_from_desc(desc: str) -> Callable:
     """Return a generator that creates values from a description pattern."""
     # Extract keywords from the description to build a minimal template
     words = re.findall(r"[\w']+", desc.lower())
-    # Use first few notable content words as a base
     content_words = [w for w in words if len(w) > 3 and w not in
                      {"that", "this", "with", "from", "where", "which",
                       "their", "about", "would", "could", "should", "what",
                       "when", "for", "the", "and", "are", "was", "has", "had"}]
     if content_words:
         base = content_words[0].title()
-        # Generate variations: e.g. "Value_1", "Value_2"
         def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
-            suffixes = rng.integers(1, 1000, size=n)
+            suffixes = rng.integers(1, 10000, size=n)
             return np.array([f"{base}_{s}" for s in suffixes])
         return _gen
     return _categorical_list(["Sample A", "Sample B", "Sample C"])
@@ -135,12 +252,8 @@ def _template_from_desc(desc: str) -> Callable:
 
 # ── Pattern matcher ─────────────────────────────────────────────────────────
 
-# Match rules: (regex_pattern, generator_factory_or_list)
-# More specific patterns should come first.
 _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
     # IDs — proper formatted IDs
-    # Note: [ _-]? matches underscore, space, or hyphen (column names are
-    # normalized to spaces but originals may have underscores or hyphens).
     (re.compile(r"(transaction|trn|txn|order|invoice)[ _-]?(id|num|number|ref|code)", re.I),
      _id_generator("TRN", 6)),
     (re.compile(r"(customer|user|client|member|patient)[ _-]?(id|num|number)", re.I),
@@ -158,20 +271,29 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
 
     # Location-like columns
     (re.compile(r"^(city|town|location|place|region|district)$", re.I),
-     _categorical_list(CITIES_IN)),
+     _categorical_list(CITIES)),
     (re.compile(r"(city|town|location|place)", re.I),
-     _categorical_list(CITIES_IN)),
+     _categorical_list(CITIES)),
     (re.compile(r"country", re.I),
      _categorical_list(COUNTRIES)),
+    (re.compile(r"address", re.I),
+     _categorical_list(CITIES)),
+
+    # Organization names
+    (re.compile(r"(company|organization|vendor|supplier|partner)", re.I),
+     _categorical_list(COMPANIES)),
+    (re.compile(r"(department|team|division|unit)", re.I),
+     _categorical_list(DEPARTMENTS)),
+    (re.compile(r"(job[ _-]?title|position|designation|role)", re.I),
+     _categorical_list(JOB_TITLES)),
+    (re.compile(r"(product[ _-]?name|item[ _-]?name|service[ _-]?name)", re.I),
+     _categorical_list(PRODUCTS)),
 
     # Categories
     (re.compile(r"(merchant|product|item)[ _-]?(categ|type|class|kind)", re.I),
      _categorical_list(MERCHANT_CATEGORIES)),
     (re.compile(r"(categ|type|class|kind|segment)", re.I),
      _categorical_list(CATEGORIES_ABC)),
-    (re.compile(r"department", re.I),
-     _categorical_list(["Engineering", "Sales", "Marketing", "Finance",
-                        "HR", "Operations", "Support"])),
     (re.compile(r"payment.*(method|type|mode)", re.I),
      _categorical_list(PAYMENT_METHODS)),
 
@@ -190,18 +312,18 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
     # Names
     (re.compile(r"^(name|full_name|customer_name|user_name)$", re.I),
      lambda n, rng, **_: np.array([
-         f"{rng.choice(FIRST_NAMES_IN)} {rng.choice(LAST_NAMES)}"
+         f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
          for _ in range(n)
      ])),
     (re.compile(r"^(first_name|fname)$", re.I),
-     _categorical_list(FIRST_NAMES_IN)),
+     _categorical_list(FIRST_NAMES)),
     (re.compile(r"^(last_name|lname|surname)$", re.I),
      _categorical_list(LAST_NAMES)),
 
     # Contact
     (re.compile(r"email", re.I),
      lambda n, rng, **_: np.array([
-         f"{rng.choice(FIRST_NAMES_IN).lower()}.{rng.choice(LAST_NAMES).lower()}"
+         f"{rng.choice(FIRST_NAMES).lower()}.{rng.choice(LAST_NAMES).lower()}"
          f"@{rng.choice(EMAIL_DOMAINS)}"
          for _ in range(n)
      ])),
@@ -214,12 +336,15 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
     # Domains / URLs
     (re.compile(r"^(domain|website|url|site)$", re.I),
      lambda n, rng, **_: np.array([
-         f"{rng.choice(FIRST_NAMES_IN).lower()}.com" for _ in range(n)
+         f"{rng.choice(FIRST_NAMES).lower()}.com" for _ in range(n)
      ])),
 
-    # Address — deliberately late so email/phone/domain rules fire first
-    (re.compile(r"address", re.I),
-     _categorical_list(CITIES_IN)),  # fallback, could be richer
+    # Description / notes columns
+    (re.compile(r"(description|desc|summary|notes?|comment|feedback|review|remark)", re.I),
+     _gen_sentence),
+
+    # Catch-all — generate varied sentences instead of "Field Value 1"
+    (re.compile(r".*"), _gen_sentence),
 ]
 
 
@@ -227,12 +352,13 @@ def choose_text_generator(col_name: str, description: str = ""
                           ) -> Callable | None:
     """Find the best text generator for a column based on name and description.
 
-    Returns a callable with signature ``gen(n, rng, **params) -> np.ndarray``,
-    or ``None`` if no rule matches (caller falls back to placeholder).
+    Returns a callable with signature ``gen(n, rng, **params) -> np.ndarray``.
+    The catch-all ``.*`` rule at the end ensures every text column gets a
+    generator — this function returns **None only** if something goes wrong.
 
     Matching is two-pass: column name first (exact), then description
-    (broader). This prevents description keywords like "address" from
-    hijacking columns like "email" whose name would match a later rule.
+    (broader). This prevents description keywords like ``address`` from
+    hijacking columns like ``email`` whose name would match a later rule.
     """
     name_lower = col_name.lower().replace("_", " ").replace("-", " ").strip()
 
@@ -254,4 +380,5 @@ def choose_text_generator(col_name: str, description: str = ""
                 if isinstance(factory, list):
                     return _categorical_list(factory)
 
+    # Should never reach here due to catch-all .* rule, but just in case
     return None

@@ -36,11 +36,13 @@ class TestGenerateColumn:
         assert all(isinstance(v, str) and len(v) > 0 for v in data)
 
     def test_generates_text_unknown_column(self):
-        """Unrecognized text column names still get placeholder fallback."""
+        """Unrecognized text column names get sentence generation instead of placeholders."""
         rng = np.random.default_rng(42)
         data = generator.generate_column("custom_note", "text", {}, 10, rng)
         assert len(data) == 10
-        assert all("Custom Note" in str(v) for v in data)
+        assert all(isinstance(v, str) and len(v) > 10 for v in data)
+        # Should produce varied sentences, not template placeholders
+        assert len(set(data)) > 1
 
     def test_generates_boolean(self):
         rng = np.random.default_rng(42)

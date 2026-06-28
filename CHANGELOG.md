@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.7.0 (2026-06-28)
+
+### Added
+
+- **Correlation Engine** — new module `datasmith/generation/correlator.py` using the Iman-Conover rank-matching method.
+  - Induces pairwise column correlations by reordering values, preserving each column's marginal distribution.
+  - Accepts arbitrary correlation specs: `[{"col_a": "price", "col_b": "quantity", "rho": 0.85}]`
+  - Handles numeric, text, and datetime columns with NaN preservation.
+  - PSD regularization via diagonal epsilon for numerically stable Cholesky decomposition.
+- **More varied text generation** — expanded and improved `text_profiles.py`:
+  - Name pools doubled (20→60 first names, 20→66 last names) for 3,960 unique name combinations
+  - City pool expanded (30→105) covering 24 countries
+  - New word banks: 25 companies, 25 job titles, 15 departments, 15 products
+  - Sentence generator for unknown text columns — 180 pre-composed pattern variations producing realistic-looking descriptions instead of "Placeholder 1"
+  - Description/notes columns now produce varied sentences instead of sequential templates
+  - Status pool expanded (6→12) with states like "Approved", "Processing", "Delivered"
+  - Payment methods pool expanded (10→15) with Google Pay, Apple Pay, PayPal, etc.
+  - Catch-all `.*` rule ensures every text column gets a realistic generator
+- **9 new correlator tests** covering correlation induction, marginal preservation, multiple pairs, NaN handling, text columns, and full-pipeline integration.
+
+### Changed
+
+- `generate_dataset()` now accepts an optional `correlations` parameter applied after generation and before imperfection injection.
+- `engine.py` pipeline: `schema → enrich → generate → **correlate** → inject → validate → return`.
+
 ## v0.6.0 (2026-06-28)
 
 ### Added

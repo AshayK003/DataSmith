@@ -16,6 +16,7 @@ from datasmith.imperfections.profiles import load_profile_from_kg
 from datasmith.schema.knowledge_graph import KnowledgeGraph
 from datasmith.schema.enricher import enrich_schema
 from datasmith.generation.generator import generate_from_schema
+from datasmith.generation.correlator import apply_correlations
 from datasmith.quality.validator import validate
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,9 @@ def generate_dataset(kg: KnowledgeGraph,
                      n_rows: int = 100,
                      custom_schema: Optional[list[dict]] = None,
                      inject_imperfections: bool = True,
+                     correlations: Optional[list[dict]] = None,
                      seed: Optional[int] = 42) -> pd.DataFrame:
-    """Full generation pipeline: schema → generate → inject → validate → return.
+    """Full generation pipeline: schema → generate → correlate → inject → validate → return.
 
     Args:
         kg: KnowledgeGraph instance.
@@ -88,6 +90,9 @@ def generate_dataset(kg: KnowledgeGraph,
         n_rows: Number of rows to generate.
         custom_schema: Optional custom column schema list. Falls back to KG.
         inject_imperfections: Apply domain imperfection profile after generation.
+        correlations: Optional list of pairwise correlation specs.
+            Each dict has ``col_a``, ``col_b``, ``rho``.
+            Example: ``[{"col_a": "price", "col_b": "quantity", "rho": 0.85}]``
         seed: Random seed for reproducibility.
 
     Returns Generated DataFrame.
@@ -117,6 +122,10 @@ def generate_dataset(kg: KnowledgeGraph,
 
             # Step 2: Generate
             df = generate_from_schema(schema, n_rows, rng)
+
+            # Step 2.5: Apply correlations (reorder values, preserve marginals)
+            if correlations:
+                df = apply_correlations(df, correlations, rng)
 
             # Step 3: Inject imperfections
             if inject_imperfections:

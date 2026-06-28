@@ -103,8 +103,9 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 |-------|-------------|-----------|
 | **UI** | Streamlit frontend — domain selection, schema editor (AG Grid), preview, CSV/JSON export | `app.py`, `pages/01_Generate.py`, `pages/02_About.py` |
 | **Pipeline** | Iterative batched generation with per-batch quality feedback, retry, and parameter adjustment | `generation/pipeline.py` |
-| **Engine** | Orchestrates generation: schema resolution → enrichment → data generation → imperfection injection → validation → retry | `generation/engine.py` |
+| **Engine** | Orchestrates generation: schema resolution → enrichment → data generation → correlation → imperfection injection → validation → retry | `generation/engine.py` |
 | **Schema Enricher** | Maps column names to semantic types (year→integer, email→email-generator), injects missing constraints (min/max, distribution hints), and sets semantic descriptions | `schema/enricher.py` |
+| **Correlation Engine** | Induces pairwise column correlations via Iman-Conover rank-matching — reorders values to match target rho while preserving marginal distributions | `generation/correlator.py` |
 | **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime) | `generation/generator.py` |
 | **Knowledge Graph** | SQLite-backed schema store with FTS5 search — domains, datasets, column schemas, LLM cache, imperfection profiles | `schema/knowledge_graph.py` |
 | **Crawler** | Multi-source schema extraction from Kaggle, UCI Archive, and direct CSV URLs | `schema/crawler.py` |
@@ -133,6 +134,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ├── generation/
 │   ├── engine.py             # Pipeline orchestrator
 │   ├── generator.py          # numpy/scipy data generation
+│   ├── correlator.py         # Iman-Conover pairwise correlation induction
 │   ├── pipeline.py           # Batched iterative generation with quality feedback
 │   ├── quality.py            # KS-stat, null-rate, correlation metrics
 │   └── adjuster.py           # Parameter adjustment between batches
@@ -213,7 +215,7 @@ uv run pytest -k "edge"          # Only edge-case tests
 uv run pytest --cov=datasmith    # Coverage report
 ```
 
-**151 tests** across 10 files. Test structure mirrors source structure:
+**160 tests** across 11 files. Test structure mirrors source structure:
 
 | Test File | What It Covers | Tests |
 |-----------|---------------|-------|
@@ -226,6 +228,7 @@ uv run pytest --cov=datasmith    # Coverage report
 | `test_llm.py` | LLM discovery: caching, parsing, response → schema mapping | 10 |
 | `test_llm_client.py` | LLM client: config, error handling, timeouts | 4 |
 | `test_enricher.py` | Semantic schema enrichment: integer types, distributions, constraint injection | 14 |
+| `test_correlator.py` | Correlation engine: induction, marginal preservation, NaN, multi-pair, integration | 9 |
 | `test_validator.py` | Quality checks: integer/bounds/format/null/diversity gates, auto-retry integration | 22 |
 
 ### Writing Tests
