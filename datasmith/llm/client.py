@@ -142,6 +142,8 @@ def chat_complete(
         req_body = dict(body)
         if body_overrides:
             req_body.update(body_overrides)
+        # Remove keys explicitly set to None (e.g. response_format after retry)
+        req_body = {k: v for k, v in req_body.items() if v is not None}
         try:
             r = requests.post(
                 f"{effective_base}/chat/completions",
@@ -157,6 +159,11 @@ def chat_complete(
             return None
         except requests.RequestException as e:
             logger.warning("LLM request failed: %s", e)
+            response_text = ""
+            if e.response is not None:
+                response_text = e.response.text[:500]
+            if response_text:
+                logger.warning("LLM response body: %s", response_text)
             return None
         except (KeyError, IndexError, json.JSONDecodeError) as e:
             logger.warning("LLM response parse failed: %s", e)
