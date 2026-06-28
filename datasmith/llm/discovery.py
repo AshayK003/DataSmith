@@ -67,7 +67,8 @@ def _parse_llm_response(content: str) -> Optional[NLDiscoveryResult]:
         return None
 
 
-def _llm_extract(nl_input: str) -> Optional[NLDiscoveryResult]:
+def _llm_extract(nl_input: str, api_key: str = "", base_url: str = "",
+                 model: str = "") -> Optional[NLDiscoveryResult]:
     """Call LLM to classify domain and extract columns."""
     sanitized = re.sub(r'[\x00-\x1f\x7f]', '', nl_input.strip())[:500]
     safe_prompt = (
@@ -78,6 +79,9 @@ def _llm_extract(nl_input: str) -> Optional[NLDiscoveryResult]:
         system_prompt=safe_prompt,
         user_prompt=f"Describe the dataset: <input>{sanitized}</input>",
         response_format={"type": "json_object"},
+        api_key=api_key,
+        base_url=base_url,
+        model=model,
     )
     if not content:
         return None
@@ -118,6 +122,9 @@ def _load_from_cache(kg: KnowledgeGraph, nl_input: str) -> Optional[NLDiscoveryR
 def discover_schema(
     kg: KnowledgeGraph,
     nl_input: str,
+    api_key: str = "",
+    base_url: str = "",
+    model: str = "",
 ) -> Optional[list[dict]]:
     """Natural language → column schema list.
 
@@ -126,6 +133,7 @@ def discover_schema(
     Args:
         kg: KnowledgeGraph instance.
         nl_input: User's natural language description.
+        api_key, base_url, model: Optional LLM config overrides (user-provided).
 
     Returns:
         List of column dicts (same format as schema_from_kg), or None if
@@ -149,11 +157,12 @@ def discover_schema(
         return _result_to_schema(cached)
 
     # ── Step 3: LLM extraction ─────────────────────────────────────
-    if not is_available():
+    has_key = bool(api_key) or is_available()
+    if not has_key:
         logger.warning("No LLM API key configured — returning generic schema")
         return None
 
-    result = _llm_extract(nl_input)
+    result = _llm_extract(nl_input, api_key=api_key, base_url=base_url, model=model)
     if not result:
         logger.warning("LLM extraction failed — returning generic schema")
         return None

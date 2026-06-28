@@ -84,6 +84,34 @@ with discover_tab:
     )
     use_nl = st.button("Discover Schema", type="primary", use_container_width=True)
 
+    with st.expander("LLM Configuration (optional)"):
+        st.caption(
+            "Bring your own API key for NL discovery. "
+            "Works with any OpenAI-compatible endpoint."
+        )
+        _llm_key = st.text_input(
+            "API Key",
+            type="password",
+            key="_llm_key_input",
+            help="e.g., gsk_xxx for Groq, sk-xxx for OpenAI-compatible",
+        )
+        _llm_base = st.text_input(
+            "Base URL",
+            placeholder="https://api.groq.com/openai/v1",
+            key="_llm_base_input",
+            help=(
+                "Leave empty for default (Groq). Common: "
+                "https://openrouter.ai/api/v1, "
+                "https://generativelanguage.googleapis.com/v1beta/openai"
+            ),
+        )
+        _llm_model = st.text_input(
+            "Model",
+            placeholder="llama-3.3-70b-versatile",
+            key="_llm_model_input",
+            help="Leave empty for default (Groq's llama-3.3-70b).",
+        )
+
 with browse_tab:
     domain_name = st.selectbox(
         "Domain",
@@ -96,11 +124,16 @@ with browse_tab:
 # ── Resolve schema ───────────────────────────────────────────────────────
 
 if use_nl and nl_input:
-    if not llm_available():
+    # Check user-provided LLM config (from expander) or env-configured
+    custom_key = st.session_state.get("_llm_key_input", "")
+    custom_base = st.session_state.get("_llm_base_input", "")
+    custom_model = st.session_state.get("_llm_model_input", "")
+    has_llm = bool(custom_key) or llm_available()
+    if not has_llm:
         st.warning(
             "No LLM API key configured. "
-            "Set `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `LLM_API_KEY` in "
-            "Streamlit Cloud secrets for NL discovery. "
+            "Expand **LLM Configuration** above to enter your own key, or "
+            "set `GROQ_API_KEY` / `OPENROUTER_API_KEY` in Streamlit Cloud secrets. "
             "Using domain browser instead."
         )
     else:
@@ -111,7 +144,10 @@ if use_nl and nl_input:
             st.stop()
         st.session_state["_last_llm_call"] = now
         with st.spinner("Analyzing your description..."):
-            resolved = discover_schema(kg, nl_input)
+            resolved = discover_schema(kg, nl_input,
+                                       api_key=custom_key,
+                                       base_url=custom_base,
+                                       model=custom_model)
             if resolved:
                 st.session_state["_resolved_schema"] = resolved
                 st.session_state["_resolved_schema_ver"] += 1

@@ -35,13 +35,35 @@ _PROVIDERS: dict[str, dict] = {
 _DEFAULT_PROVIDER = "groq"
 
 
-def get_config() -> tuple[str, str, str, str]:
-    """Read LLM config from env vars.
+def get_config(
+    override_key: str = "",
+    override_base_url: str = "",
+    override_model: str = "",
+) -> tuple[str, str, str, str]:
+    """Read LLM config from env vars or explicit overrides.
 
-    Priority: GEMINI_API_KEY → GROQ_API_KEY → OPENROUTER_API_KEY → LLM_API_KEY.
-    Override endpoint with LLM_BASE_URL and model with LLM_MODEL.
+    Override params take precedence over env vars. Useful for
+    user-provided keys in the frontend.
+
+    Priority for key: override_key → env keys → fallback.
+    Priority for base_url: override_base_url → LLM_BASE_URL → provider default.
+    Priority for model: override_model → LLM_MODEL → provider default.
     Returns (api_key, base_url, model, provider_name).
     """
+    if override_key:
+        fallback_base = os.environ.get(
+            "LLM_BASE_URL", _PROVIDERS[_DEFAULT_PROVIDER]["base_url"]
+        )
+        fallback_model = os.environ.get(
+            "LLM_MODEL", _PROVIDERS[_DEFAULT_PROVIDER]["model"]
+        )
+        return (
+            override_key,
+            override_base_url or fallback_base,
+            override_model or fallback_model,
+            "custom",
+        )
+
     # Check explicit provider env vars first
     for pname, cfg in _PROVIDERS.items():
         key = os.environ.get(cfg["env_key"])
@@ -69,6 +91,9 @@ def chat_complete(
     response_format: Optional[dict] = None,
     temperature: float = 0.1,
     max_tokens: int = 2048,
+    api_key: str = "",
+    base_url: str = "",
+    model: str = "",
 ) -> Optional[str]:
     """Call an OpenAI-compatible chat completions endpoint.
 
@@ -78,24 +103,29 @@ def chat_complete(
         response_format: Optional JSON schema dict (like OpenAI structured outputs).
         temperature: Sampling temperature (0.1 for deterministic extraction).
         max_tokens: Max tokens in response.
+        api_key, base_url, model: Optional overrides (user-provided config).
 
     Returns:
         Response text, or None on failure.
     """
-    api_key, base_url, model, provider = get_config()
-    if not api_key:
+    effective_key, effective_base, effective_model, provider = get_config(
+        override_key=api_key,
+        override_base_url=base_url,
+        override_model=model,
+    )
+    if not effective_key:
         logger.warning("No LLM API key configured")
         return None
 
     logger.debug("LLM call: provider=%s model=%s", provider, model)
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {effective_key}",
         "Content-Type": "application/json",
     }
 
     body = {
-        "model": model,
+        "model": effective_model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -109,7 +139,7 @@ def chat_complete(
 
     try:
         r = requests.post(
-            f"{base_url}/chat/completions",
+            f"{effective_base}/chat/completions",
             headers=headers,
             json=body,
             timeout=30,
