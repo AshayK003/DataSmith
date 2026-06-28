@@ -15,6 +15,7 @@ from datasmith.llm.client import is_available as llm_available
 from datasmith.llm.discovery import discover_schema
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.generation.engine import generate_dataset, schema_from_kg, get_generic_schema
+from datasmith.generation.pipeline import batched_generate
 from datasmith.ui import icons
 from datasmith.ui.components import render_header
 
@@ -301,6 +302,22 @@ if resolved_schema:
         inject_imperfections = st.checkbox("Inject realistic imperfections", value=True,
                                            help="Apply domain-specific nulls, outliers, and noise")
 
+    use_iterative = st.checkbox(
+        "Iterative quality enhancement",
+        value=True,
+        help=(
+            "Generate in batches with per-batch quality feedback. "
+            "Produces statistically closer data at the cost of slightly longer generation. "
+            "Uses KS statistics, null-rate drift, and correlation checks."
+        ),
+    )
+
+    if use_iterative:
+        st.caption(
+            "Batched mode: quality metrics (KS, null-rate, correlation) are computed per batch. "
+            "Low-quality batches are retried. Parameters adjust between batches."
+        )
+
     # ── Generate ─────────────────────────────────────────────────────────
 
     if st.button("Generate Dataset", type="primary", use_container_width=True):
@@ -322,17 +339,31 @@ if resolved_schema:
 
         with st.status("Generating dataset...", expanded=True) as status:
             try:
-                status.update(
-                    label=f"Generating {n_rows} rows from {len(edited)} columns...",
-                    state="running",
-                )
-                df = generate_dataset(
-                    kg=kg,
-                    domain_name=st.session_state["active_domain"],
-                    n_rows=n_rows,
-                    custom_schema=edited,
-                    inject_imperfections=inject_imperfections,
-                )
+                if use_iterative:
+                    status.update(
+                        label=f"Generating {n_rows} rows from {len(edited)} columns "
+                              f"(batched quality mode)...",
+                        state="running",
+                    )
+                    df = batched_generate(
+                        kg=kg,
+                        domain_name=st.session_state["active_domain"],
+                        total_rows=n_rows,
+                        custom_schema=edited,
+                        inject_imperfections=inject_imperfections,
+                    )
+                else:
+                    status.update(
+                        label=f"Generating {n_rows} rows from {len(edited)} columns...",
+                        state="running",
+                    )
+                    df = generate_dataset(
+                        kg=kg,
+                        domain_name=st.session_state["active_domain"],
+                        n_rows=n_rows,
+                        custom_schema=edited,
+                        inject_imperfections=inject_imperfections,
+                    )
 
                 status.update(label="Done!", state="complete")
                 st.session_state["last_df"] = df

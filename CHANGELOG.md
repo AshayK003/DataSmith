@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.9 (2026-06-28)
+
+### Added
+
+- **Batched iterative generation (Phase 0)** — new `generation/pipeline.py` orchestrator generates data in batches with per-batch quality feedback. KS statistics, null-rate drift, and correlation preservation are measured on each batch. Low-quality batches are retried automatically. Parameters adjust between batches to compensate for sampling drift.
+- **Quality metrics module** (`generation/quality.py`) — `compute_batch_quality()` returns per-column KS stats, null-rate drift, and a composite 0–1 quality score. Uses two-sample KS test vs a deterministic reference distribution. No ML, no LLM, no new dependencies.
+- **Parameter adjuster** (`generation/adjuster.py`) — proportional-correction rules that tweak column means and null rates between batches based on quality feedback. Original schema is never mutated.
+- **UI toggle** on the Generate page — "Iterative quality enhancement" checkbox (on by default) switches between the new batched pipeline and the original single-pass generation.
+- **20 new tests** covering quality metrics, adjuster logic, and batched integration — all pass alongside 94 existing tests with zero regressions.
+
 ## v0.3.8 (2026-06-24)
 
 ### Fixed

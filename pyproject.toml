@@ -1,6 +1,6 @@
 [project]
 name = "datasmith"
-version = "0.3.7"
+version = "0.3.9"
 description = "Free open-source synthetic dataset generator with domain-specific imperfections"
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
