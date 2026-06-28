@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.2 (2026-06-28)
+
+### Fixed
+
+- **Email columns now generate proper emails** — fixed rule ordering in `_TEXT_RULES` where `address` rule (matching "Email address" description) fired before `email` rule. Also changed `choose_text_generator` to match column name first, then description only as fallback, preventing description keywords from hijacking columns.
+- **Formatted IDs for customer/user/employee columns** — ID patterns now use `[ _-]?` separator to handle column names normalized to spaces (e.g. `customer_id` → `customer id`). Previously only matched underscore, causing `customer_id` to fall through to template fallback ("Customer Id 1").
+- **Powerlaw sampler no longer collapses to near-min** — when `mean` is not provided in the schema, infers it from min/max range (~30% of span). Previously defaulted to `mean=1.0`, producing values near min for any range (e.g. `price(0.99–500)` → ~2).
+- **Normal sampler infers mean from min/max** — when `mean` is not specified but `min` and `max` are, defaults to their midpoint instead of 0.0, preventing all values from clipping to the minimum.
+- **Expanded country word bank** — from 8 entries to 195+ countries, providing realistic diversity for country columns.
+- **New ID patterns** — added `(policy|claim)_(id|num|number)` → `POL-XXXXXXX`.
+
 ## v0.4.1 (2026-06-28)
 
 ### Fixed

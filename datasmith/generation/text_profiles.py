@@ -56,7 +56,36 @@ LAST_NAMES = [
 STATUSES = ["Active", "Inactive", "Pending", "Suspended", "Completed", "Failed"]
 GENDERS = ["Male", "Female", "Other"]
 RATING_LABELS = ["1", "2", "3", "4", "5"]
-COUNTRIES = ["India", "USA", "UK", "Canada", "Australia", "Germany", "Japan", "UAE"]
+COUNTRIES = [
+    "India", "USA", "UK", "Canada", "Australia", "Germany", "Japan", "UAE",
+    "Brazil", "Mexico", "France", "Italy", "Spain", "Netherlands", "Sweden",
+    "Norway", "Denmark", "Finland", "Switzerland", "Austria", "Belgium",
+    "Ireland", "Portugal", "Greece", "Poland", "Czech Republic", "Hungary",
+    "Romania", "Russia", "Turkey", "Israel", "Saudi Arabia", "Qatar",
+    "Kuwait", "Oman", "Bahrain", "Jordan", "Egypt", "South Africa", "Nigeria",
+    "Kenya", "Ghana", "Morocco", "Argentina", "Chile", "Colombia", "Peru",
+    "Thailand", "Vietnam", "Indonesia", "Malaysia", "Philippines", "Singapore",
+    "South Korea", "Taiwan", "China", "New Zealand", "Pakistan", "Bangladesh",
+    "Sri Lanka", "Nepal", "Myanmar", "Ukraine", "Kazakhstan", "Algeria",
+    "Angola", "Ethiopia", "Tanzania", "Uganda", "Mozambique", "Zambia",
+    "Zimbabwe", "Botswana", "Ivory Coast", "Cameroon", "Tunisia", "Sudan",
+    "Senegal", "Mali", "Madagascar", "Burkina Faso", "Benin", "Rwanda",
+    "Somalia", "Afghanistan", "Uzbekistan", "Azerbaijan", "Georgia",
+    "Armenia", "Belarus", "Croatia", "Serbia", "Bulgaria", "Slovakia",
+    "Slovenia", "Lithuania", "Latvia", "Estonia", "Costa Rica", "Panama",
+    "Guatemala", "Dominican Republic", "Puerto Rico", "Uruguay", "Paraguay",
+    "Bolivia", "Ecuador", "Venezuela", "Cuba", "Jamaica", "Trinidad",
+    "Bahamas", "Barbados", "Fiji", "Papua New Guinea", "Mongolia", "Laos",
+    "Cambodia", "Lebanon", "Syria", "Libya", "Iraq", "Yemen", "Maldives",
+    "Bhutan", "Brunei", "Macau", "Hong Kong", "Luxembourg", "Monaco",
+    "Malta", "Cyprus", "Iceland", "Montenegro", "Albania", "North Macedonia",
+    "Bosnia", "Moldova", "Kyrgyzstan", "Turkmenistan", "Tajikistan",
+    "Mauritius", "Seychelles", "Comoros", "Cape Verde", "Mauritania",
+    "Chad", "Niger", "Congo", "DRC", "Gabon", "Equatorial Guinea",
+    "Liberia", "Sierra Leone", "Togo", "Eritrea", "Djibouti", "Burundi",
+    "Lesotho", "Eswatini", "Timor-Leste", "Solomon Islands", "Vanuatu",
+    "Samoa", "Tonga", "Palau", "Micronesia", "Marshall Islands",
+]
 CATEGORIES_ABC = ["A", "B", "C", "D"]
 BOOLEAN_YESNO = ["Yes", "No"]
 EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
@@ -110,18 +139,22 @@ def _template_from_desc(desc: str) -> Callable:
 # More specific patterns should come first.
 _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
     # IDs — proper formatted IDs
-    (re.compile(r"(transaction|trn|txn|order|invoice)_?(id|num|number|ref|code)", re.I),
+    # Note: [ _-]? matches underscore, space, or hyphen (column names are
+    # normalized to spaces but originals may have underscores or hyphens).
+    (re.compile(r"(transaction|trn|txn|order|invoice)[ _-]?(id|num|number|ref|code)", re.I),
      _id_generator("TRN", 6)),
-    (re.compile(r"(customer|user|client|member|patient)_?(id|num|number)", re.I),
+    (re.compile(r"(customer|user|client|member|patient)[ _-]?(id|num|number)", re.I),
      _id_generator("CUST", 5)),
-    (re.compile(r"(product|item)_?(id|num|code|sku)", re.I),
+    (re.compile(r"(product|item)[ _-]?(id|num|code|sku)", re.I),
      _id_generator("PRD", 4)),
-    (re.compile(r"(employee|emp|staff)_?(id|num)", re.I),
+    (re.compile(r"(employee|emp|staff)[ _-]?(id|num)", re.I),
      _id_generator("EMP", 4)),
-    (re.compile(r"(order|purchase)_?(id|num)", re.I),
+    (re.compile(r"(order|purchase)[ _-]?(id|num)", re.I),
      _id_generator("ORD", 6)),
-    (re.compile(r"(account)_?(id|num)", re.I),
+    (re.compile(r"(account)[ _-]?(id|num)", re.I),
      _id_generator("ACC", 6)),
+    (re.compile(r"(policy|claim)[ _-]?(id|num|number)", re.I),
+     _id_generator("POL", 7)),
 
     # Location-like columns
     (re.compile(r"^(city|town|location|place|region|district)$", re.I),
@@ -130,11 +163,9 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(CITIES_IN)),
     (re.compile(r"country", re.I),
      _categorical_list(COUNTRIES)),
-    (re.compile(r"address", re.I),
-     _categorical_list(CITIES_IN)),  # fallback, could be richer
 
     # Categories
-    (re.compile(r"(merchant|product|item)_?(categ|type|class|kind)", re.I),
+    (re.compile(r"(merchant|product|item)[ _-]?(categ|type|class|kind)", re.I),
      _categorical_list(MERCHANT_CATEGORIES)),
     (re.compile(r"(categ|type|class|kind|segment)", re.I),
      _categorical_list(CATEGORIES_ABC)),
@@ -185,6 +216,10 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      lambda n, rng, **_: np.array([
          f"{rng.choice(FIRST_NAMES_IN).lower()}.com" for _ in range(n)
      ])),
+
+    # Address — deliberately late so email/phone/domain rules fire first
+    (re.compile(r"address", re.I),
+     _categorical_list(CITIES_IN)),  # fallback, could be richer
 ]
 
 
@@ -194,13 +229,29 @@ def choose_text_generator(col_name: str, description: str = ""
 
     Returns a callable with signature ``gen(n, rng, **params) -> np.ndarray``,
     or ``None`` if no rule matches (caller falls back to placeholder).
+
+    Matching is two-pass: column name first (exact), then description
+    (broader). This prevents description keywords like "address" from
+    hijacking columns like "email" whose name would match a later rule.
     """
     name_lower = col_name.lower().replace("_", " ").replace("-", " ").strip()
 
+    # Pass 1: match column name only (highest priority)
     for pattern, factory in _TEXT_RULES:
-        if pattern.search(name_lower) or (description and pattern.search(description)):
+        if pattern.search(name_lower):
             if callable(factory):
                 return factory
             if isinstance(factory, list):
                 return _categorical_list(factory)
+
+    # Pass 2: match description only (fallback, avoids rule-order pitfalls)
+    if description:
+        desc_lower = description.lower()
+        for pattern, factory in _TEXT_RULES:
+            if pattern.search(desc_lower):
+                if callable(factory):
+                    return factory
+                if isinstance(factory, list):
+                    return _categorical_list(factory)
+
     return None

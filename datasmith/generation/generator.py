@@ -17,24 +17,40 @@ logger = logging.getLogger(__name__)
 
 
 def _sample_normal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
-    """Normal distribution from KG stats."""
-    mean = stat.get("mean", 0.0)
-    std = max(stat.get("std", 1.0), 0.01)
-    data = rng.normal(mean, std, n)
+    """Normal distribution from KG stats.
+
+    When mean is not provided, infers it from min/max midpoint.
+    """
     lo = stat.get("min")
     hi = stat.get("max")
+    if lo is not None and hi is not None:
+        mid = (lo + hi) / 2.0
+    else:
+        mid = 0.0
+    mean = stat.get("mean", mid)
+    std = max(stat.get("std", abs(mid) * 0.1 + 1.0), 0.01)
+    data = rng.normal(mean, std, n)
     if lo is not None:
         data = np.clip(data, lo, hi)
     return data
 
 
 def _sample_powerlaw(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
-    """Power-law (Pareto) skewed to the right."""
-    mean = stat.get("mean", 1.0)
-    std = max(stat.get("std", 0.5), 0.01)
+    """Power-law (Pareto) skewed to the right.
+
+    When mean is not provided, infers it from min/max range (~30% of span)
+    so columns like price(0.99–500) don't collapse to near-min values.
+    """
+    lo = stat.get("min", 0.0)
+    hi = stat.get("max", 100.0)
+    if hi <= lo:
+        hi = lo + 100.0
+    mean = stat.get("mean")
+    if mean is None:
+        mean = lo + (hi - lo) * 0.3  # powerlaw peaks near the left tail
+    std = max(stat.get("std", abs(hi - lo) * 0.2), 0.01)
     # alpha > 2 makes finite variance
     alpha = max((mean / std) ** 2, 1.5)
-    lo = stat.get("min", 0.0)
     data = rng.pareto(alpha, n) + abs(lo) + 1.0
     scale = max(mean / np.mean(data) if np.mean(data) > 0 else 1.0, 0.1)
     data = data * scale + lo
