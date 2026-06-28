@@ -7,7 +7,6 @@ not exact numeric equality (which would be fragile).
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from datasmith.generation import quality, adjuster, pipeline
 from datasmith.core.database import Database

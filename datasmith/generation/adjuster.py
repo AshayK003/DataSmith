@@ -126,7 +126,6 @@ def adjust_imperfection_profile(profile: dict | None,
         if name not in null_patterns:
             continue
 
-        target_null = float(col.get("null_ratio", 0.0) or 0.0)
         current_pct = float(null_patterns[name].get("null_pct", 0.0) or 0.0)
         if current_pct <= 0:
             continue

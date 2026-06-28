@@ -1,4 +1,5 @@
-"""Quality metrics for synthetic data — KS statistics, null-rate drift, and correlation preservation.
+"""Quality metrics for synthetic data — KS statistics, null-rate drift,
+and correlation preservation.
 
 Each metric compares a generated batch against the expected statistical
 profile from the schema. All metrics are statistical (no ML, no LLM).
@@ -165,6 +166,7 @@ def compute_batch_quality(df: pd.DataFrame,
     if "corr_diff" in metrics and metrics["corr_diff"] > 0:
         penalties.append(min(metrics["corr_diff"] * 5.0, 1.0))
 
-    metrics["quality_score"] = round(max(0.0, 1.0 - float(np.mean(penalties))), 4) if penalties else 1.0
+    score = round(max(0.0, 1.0 - float(np.mean(penalties))), 4) if penalties else 1.0
+    metrics["quality_score"] = score
 
     return metrics
