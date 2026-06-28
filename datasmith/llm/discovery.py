@@ -32,15 +32,25 @@ _SYSTEM_PROMPT = (
     "social-media, iot-sensors, real-estate, transportation, energy, "
     "manufacturing, or a custom domain for anything else).\n"
     "2. Describe the domain in one short sentence.\n"
-    "3. Extract the columns the user describes. Add extra columns only if they "
+    "3. For EACH column, FIRST decide the correct data_type, THEN fill "
+    "appropriate stats. Use this decision process:\n"
+    "   - If the column holds whole numbers only (counts, IDs, quantities, "
+    "years, ages, ranks) → 'integer'\n"
+    "   - If the column holds decimal/fractional values (prices, percentages, "
+    "ratings with decimals, measurements) → 'numeric'\n"
+    "   - If the column holds text/categorical values (names, emails, "
+    "categories, addresses) → 'text'\n"
+    "   - If the column holds true/false values → 'boolean'\n"
+    "   - If the column holds dates/timestamps → 'datetime'\n"
+    "4. Extract the columns the user describes. Add extra columns only if they "
     "are obvious (e.g. an ID column for a transaction dataset)."
     "\n"
     "Rules:\n"
     "- column_name: lowercase snake_case\n"
     "- data_type: one of (numeric, integer, text, boolean, datetime)\n"
-    "- For numeric columns: provide distribution_hint (normal, uniform, "
-    "powerlaw, lognormal, left_skewed), min, max, and mean where "
-    "reasonable.\n"
+    "- For numeric/integer columns: ALWAYS provide min, max, and mean. "
+    "Also provide distribution_hint (normal, uniform, powerlaw, lognormal, "
+    "left_skewed) when the data shape is clear.\n"
     "- Provide 4-12 columns. Include at least one text ID column and a "
     "datetime column for realistic datasets.\n"
     "- description: Short one-sentence explanation of what the column contains.\n"
@@ -56,6 +66,7 @@ _SYSTEM_PROMPT = (
     '      "column_name": "...",\n'
     '      "data_type": "...",\n'
     '      "description": "...",\n'
+    '      "type_reasoning": "...",\n'
     '      "distribution_hint": null,\n'
     '      "min": null,\n'
     '      "max": null,\n'
@@ -239,6 +250,8 @@ def _result_to_schema(result: NLDiscoveryResult) -> list[dict]:
             "data_type": col.data_type,
             "description": col.description or "",
         }
+        if col.type_reasoning:
+            entry["type_reasoning"] = col.type_reasoning
         if col.distribution_hint:
             entry["distribution_hint"] = col.distribution_hint
         if col.min is not None:

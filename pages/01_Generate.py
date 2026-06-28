@@ -358,6 +358,16 @@ if resolved_schema:
 
     # ── Build edited schema from grid data ────────────────────────────
     grid_df = st.session_state["_grid_data"]
+
+    def _safe_float(val, default=None):
+        """Coerce grid cell value to float. AG Grid sometimes returns strings."""
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return default
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+
     edited = []
     for _, row in grid_df.iterrows():
         raw_name = str(row.get("column_name", "") or "")
@@ -369,10 +379,10 @@ if resolved_schema:
             "data_type": row.get("data_type", "text"),
         }
         if entry["data_type"] == "numeric":
-            entry["mean"] = row.get("mean") if pd.notna(row.get("mean")) else 50.0
-            entry["std"] = row.get("std") if pd.notna(row.get("std")) else 20.0
-            entry["min"] = row.get("min") if pd.notna(row.get("min")) else 0.0
-            entry["max"] = row.get("max") if pd.notna(row.get("max")) else 100.0
+            entry["mean"] = _safe_float(row.get("mean"), 50.0)
+            entry["std"] = _safe_float(row.get("std"), 20.0)
+            entry["min"] = _safe_float(row.get("min"), 0.0)
+            entry["max"] = _safe_float(row.get("max"), 100.0)
         edited.append(entry)
 
     # ── Generation options ───────────────────────────────────────────────

@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.8.0 (2026-06-28)
+
+### Fixed
+
+- **`'<' not supported between instances of 'str' and 'float'`** — LLMs sometimes return numeric schema fields (`min`, `max`, `mean`, `std`) as strings (e.g. `"0.99"` instead of `0.99`). Added `_coerce_stat()` helper in `generator.py` that converts all stat values to `float` with a safe fallback. Applied across all 5 distribution samplers (normal, powerlaw, lognormal, uniform, beta) and `_generate_numeric_column`. Also applied to `skewness`, `precision`, and `true_ratio`.
+- **AG Grid string values** — the schema editor's grid cells could return strings for numeric columns after user edits. Added `_safe_float()` in `pages/01_Generate.py` to coerce grid values before they reach the generator.
+
+### Changed
+
+- **LLM datatype decision step** — the NL → Schema system prompt now instructs the LLM to explicitly decide each column's data type *before* generating stats, with a clear decision process: whole numbers → `integer`, decimals → `numeric`, text → `text`. Added `type_reasoning` field to `ColumnSchema` Pydantic model so the LLM explains why it chose each type (e.g. "quantity is always a whole number" or "price can have cents"). This reduces LLMs defaulting everything to `"numeric"` when `"integer"` would be more correct.
+
 ## v0.7.0 (2026-06-28)
 
 ### Added

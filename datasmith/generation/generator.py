@@ -13,6 +13,22 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
+def _coerce_stat(value, default=None):
+    """Coerce a stat value (min, max, mean, std, etc.) to float.
+
+    LLMs sometimes return numeric fields as strings (e.g. "0.99" instead of
+    0.99). This causes '<' not supported between 'str' and 'float' errors
+    in samplers. This helper ensures all stat values are safe floats.
+    """
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 # ── Distribution samplers ─────────────────────────────────────────────────
 
 
@@ -21,14 +37,14 @@ def _sample_normal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
 
     When mean is not provided, infers it from min/max midpoint.
     """
-    lo = stat.get("min")
-    hi = stat.get("max")
+    lo = _coerce_stat(stat.get("min"))
+    hi = _coerce_stat(stat.get("max"))
     if lo is not None and hi is not None:
         mid = (lo + hi) / 2.0
     else:
         mid = 0.0
-    mean = stat.get("mean", mid)
-    std = max(stat.get("std", abs(mid) * 0.1 + 1.0), 0.01)
+    mean = _coerce_stat(stat.get("mean"), mid)
+    std = max(_coerce_stat(stat.get("std"), abs(mid) * 0.1 + 1.0), 0.01)
     data = rng.normal(mean, std, n)
     if lo is not None:
         data = np.clip(data, lo, hi)
@@ -41,20 +57,20 @@ def _sample_powerlaw(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray
     When mean is not provided, infers it from min/max range (~30% of span)
     so columns like price(0.99–500) don't collapse to near-min values.
     """
-    lo = stat.get("min", 0.0)
-    hi = stat.get("max", 100.0)
+    lo = _coerce_stat(stat.get("min"), 0.0)
+    hi = _coerce_stat(stat.get("max"), 100.0)
     if hi <= lo:
         hi = lo + 100.0
-    mean = stat.get("mean")
+    mean = _coerce_stat(stat.get("mean"))
     if mean is None:
         mean = lo + (hi - lo) * 0.3  # powerlaw peaks near the left tail
-    std = max(stat.get("std", abs(hi - lo) * 0.2), 0.01)
+    std = max(_coerce_stat(stat.get("std"), abs(hi - lo) * 0.2), 0.01)
     # alpha > 2 makes finite variance
     alpha = max((mean / std) ** 2, 1.5)
     data = rng.pareto(alpha, n) + abs(lo) + 1.0
     scale = max(mean / np.mean(data) if np.mean(data) > 0 else 1.0, 0.1)
     data = data * scale + lo
-    hi = stat.get("max")
+    hi = _coerce_stat(stat.get("max"))
     if hi is not None:
         data = np.clip(data, lo, hi)
     return data
@@ -62,14 +78,14 @@ def _sample_powerlaw(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray
 
 def _sample_lognormal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     """Lognormal distribution (always positive, right-skewed)."""
-    mean = max(stat.get("mean", 1.0), 0.01)
-    std = max(stat.get("std", 0.5), 0.01)
+    mean = max(_coerce_stat(stat.get("mean"), 1.0), 0.01)
+    std = max(_coerce_stat(stat.get("std"), 0.5), 0.01)
     # Convert moment params to lognormal params
     mu = np.log(mean ** 2 / np.sqrt(std ** 2 + mean ** 2))
     sigma = np.sqrt(np.log(1 + (std / mean) ** 2))
     data = rng.lognormal(mu, sigma, n)
-    lo = stat.get("min")
-    hi = stat.get("max")
+    lo = _coerce_stat(stat.get("min"))
+    hi = _coerce_stat(stat.get("max"))
     scale = mean / np.mean(data) if np.mean(data) > 0 else 1.0
     data = data * scale
     if lo is not None:
@@ -81,8 +97,8 @@ def _sample_lognormal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarra
 
 def _sample_uniform(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     """Uniform distribution between min and max."""
-    lo = stat.get("min", 0.0)
-    hi = stat.get("max", 1.0)
+    lo = _coerce_stat(stat.get("min"), 0.0)
+    hi = _coerce_stat(stat.get("max"), 1.0)
     if hi <= lo:
         hi = lo + 1.0
     return rng.uniform(lo, hi, n)
@@ -90,9 +106,9 @@ def _sample_uniform(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
 
 def _sample_beta_left_skewed(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     """Left-skewed (negatively skewed) using beta distribution."""
-    mean = stat.get("mean", 0.5)
-    lo = stat.get("min", 0.0)
-    hi = stat.get("max", 1.0)
+    mean = _coerce_stat(stat.get("mean"), 0.5)
+    lo = _coerce_stat(stat.get("min"), 0.0)
+    hi = _coerce_stat(stat.get("max"), 1.0)
     if hi <= lo:
         hi = lo + 1.0
     # Beta distribution with a > b for left skew
@@ -117,7 +133,7 @@ def _generate_numeric_column(col_name: str, data_type: str, stats: dict,
                              n: int, rng: np.random.Generator) -> np.ndarray:
     """Generate a numeric column using its distribution hint and stats."""
     dist_hint = (stats.get("distribution_hint") or
-                 _infer_distribution(stats.get("skewness", 0)))
+                 _infer_distribution(_coerce_stat(stats.get("skewness"), 0)))
     sampler = _DISTRIBUTIONS.get(dist_hint, _sample_normal)
 
     try:
@@ -130,7 +146,7 @@ def _generate_numeric_column(col_name: str, data_type: str, stats: dict,
         data = rng.uniform(stats.get("min", 0), stats.get("max", 100), n)
 
     # Ensure precision
-    precision = stats.get("precision")
+    precision = _coerce_stat(stats.get("precision"))
     if precision and precision > 0:
         data = np.round(data / precision) * precision
 
@@ -189,7 +205,7 @@ def generate_column(col_name: str, data_type: str,
         return np.array([f"{template} {i+1}" for i in range(n)])
 
     elif dtype == "boolean":
-        ratio = stats.get("true_ratio", 0.5)
+        ratio = _coerce_stat(stats.get("true_ratio"), 0.5)
         return rng.random(n) < ratio
 
     elif dtype == "datetime":

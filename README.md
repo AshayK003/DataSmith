@@ -155,7 +155,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ├── crawl_schemas.py          # Legacy CLI (crawl only)
 └── analyze_domains.py        # Domain fingerprint analysis CLI
 
-📦 tests/                     # 151 tests across 10 files
+📦 tests/                     # 160 tests across 11 files
 ```
 
 ---

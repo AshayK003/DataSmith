@@ -11,6 +11,13 @@ class ColumnSchema(BaseModel):
         pattern=r"^(numeric|integer|text|boolean|datetime)$",
     )
     description: str = Field(description="What this column represents")
+    type_reasoning: str | None = Field(
+        None,
+        description=(
+            "Brief explanation of why this data_type was chosen "
+            "(e.g. 'quantity is always a whole number' or 'price can have cents')"
+        ),
+    )
     distribution_hint: str | None = Field(
         None,
         description=(
