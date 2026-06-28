@@ -158,9 +158,11 @@ if use_nl and nl_input:
                 st.session_state["_schema_source"] = f"Description: _{nl_input}_"
                 st.session_state["active_domain"] = nl_input[:40]
             else:
-                st.info(
+                st.warning(
                     "Could not discover a schema from that description. "
-                    "Try being more specific or pick a domain below."
+                    "The LLM may have returned an unexpected format. "
+                    "Check that your API key and model are correct, "
+                    "or try being more specific."
                 )
 
 elif use_domain:

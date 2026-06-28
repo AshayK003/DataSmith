@@ -40,9 +40,29 @@ _SYSTEM_PROMPT = (
     "- For numeric columns: provide distribution_hint (normal, uniform, "
     "powerlaw, lognormal, left_skewed), min, max, and mean where "
     "reasonable.\n"
-    "- Provide 4-10 columns. Include at least one text ID column and a "
+    "- Provide 4-12 columns. Include at least one text ID column and a "
     "datetime column for realistic datasets.\n"
-    "- Response must be valid JSON matching the schema exactly.\n"
+    "- description: Short one-sentence explanation of what the column contains.\n"
+    "- null_ratio: optional estimated fraction of missing values (0.0-1.0).\n"
+    "- IMPORTANT: Respond with ONLY valid JSON. "
+    "No markdown fences, no commentary before or after.\n"
+    "- Use this exact JSON structure:\n"
+    '{\n'
+    '  "domain": "...",\n'
+    '  "domain_description": "...",\n'
+    '  "columns": [\n'
+    '    {\n'
+    '      "column_name": "...",\n'
+    '      "data_type": "...",\n'
+    '      "description": "...",\n'
+    '      "distribution_hint": null,\n'
+    '      "min": null,\n'
+    '      "max": null,\n'
+    '      "mean": null,\n'
+    '      "null_ratio": null\n'
+    '    }\n'
+    "  ]\n"
+    "}\n"
 )
 
 
@@ -52,19 +72,41 @@ def _cache_key(nl_input: str) -> str:
 
 def _parse_llm_response(content: str) -> Optional[NLDiscoveryResult]:
     """Parse LLM JSON response into NLDiscoveryResult."""
-    # Try to extract JSON from markdown code fences
     text = content.strip()
+
+    # Strip markdown code fences
     if "```json" in text:
         text = text.split("```json")[1].split("```")[0].strip()
     elif "```" in text:
-        text = text.split("```")[1].split("```")[0].strip()
+        # Try last code fence block
+        parts = text.split("```")
+        # Pick the longest non-empty chunk (usually the JSON)
+        candidates = [p.strip() for p in parts if p.strip() and "{" in p]
+        if candidates:
+            text = max(candidates, key=len)
 
+    # Try direct parse first
     try:
         data = json.loads(text)
         return NLDiscoveryResult(**data)
-    except (json.JSONDecodeError, ValidationError) as e:
-        logger.warning("Failed to parse LLM response: %s", e)
-        return None
+    except (json.JSONDecodeError, ValidationError):
+        pass
+
+    # Fallback: find the first `{…}` block that looks like our schema
+    brace_start = text.find("{")
+    if brace_start >= 0:
+        # Greedy match: find the last `}` that produces valid JSON
+        for brace_end in range(len(text) - 1, brace_start, -1):
+            if text[brace_end] == "}":
+                candidate = text[brace_start:brace_end + 1]
+                try:
+                    data = json.loads(candidate)
+                    return NLDiscoveryResult(**data)
+                except (json.JSONDecodeError, ValidationError):
+                    continue
+
+    logger.warning("Failed to parse LLM response as JSON")
+    return None
 
 
 def _llm_extract(nl_input: str, api_key: str = "", base_url: str = "",

@@ -137,26 +137,45 @@ def chat_complete(
     if response_format:
         body["response_format"] = response_format
 
-    try:
-        r = requests.post(
-            f"{effective_base}/chat/completions",
-            headers=headers,
-            json=body,
-            timeout=30,
-        )
-        r.raise_for_status()
-        data = r.json()
-        content = data["choices"][0]["message"]["content"]
+    def _do_request(body_overrides: dict | None = None) -> str | None:
+        """Inner request helper for retry logic."""
+        req_body = dict(body)
+        if body_overrides:
+            req_body.update(body_overrides)
+        try:
+            r = requests.post(
+                f"{effective_base}/chat/completions",
+                headers=headers,
+                json=req_body,
+                timeout=30,
+            )
+            r.raise_for_status()
+            data = r.json()
+            return data["choices"][0]["message"]["content"]
+        except requests.Timeout:
+            logger.warning("LLM request timed out after 30s")
+            return None
+        except requests.RequestException as e:
+            logger.warning("LLM request failed: %s", e)
+            return None
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.warning("LLM response parse failed: %s", e)
+            return None
+
+    # Primary attempt
+    content = _do_request()
+    if content is not None:
         return content
-    except requests.Timeout:
-        logger.warning("LLM request timed out after 30s")
-        return None
-    except requests.RequestException as e:
-        logger.warning("LLM request failed: %s", e)
-        return None
-    except (KeyError, IndexError, json.JSONDecodeError) as e:
-        logger.warning("LLM response parse failed: %s", e)
-        return None
+
+    # Retry: if response_format was set, some providers (Gemini-compatible)
+    # don't support it. Drop it and try again.
+    if response_format:
+        logger.info("Retrying LLM call without response_format")
+        content = _do_request({"response_format": None})
+        if content is not None:
+            return content
+
+    return None
 
 
 def is_available() -> bool:
