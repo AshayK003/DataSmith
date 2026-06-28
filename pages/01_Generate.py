@@ -76,6 +76,42 @@ st.caption(
 
 discover_tab, browse_tab = st.tabs(["Describe", "Browse Domains"])
 
+# Provider presets for quick config
+_LLM_PRESETS: dict[str, dict | None] = {
+    "Gemini (default)": {
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "model": "gemini-2.0-flash",
+    },
+    "Groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": "llama-3.3-70b-versatile",
+    },
+    "OpenRouter": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "qwen/qwen3-32b:free",
+    },
+    "OpenCode Zen": {
+        "base_url": "https://opencode.ai/zen/v1",
+        "model": "deepseek-v4-flash-free",
+    },
+    "Custom": None,
+}
+
+
+def _apply_llm_preset() -> None:
+    """Callback: fill base URL & model from the selected preset."""
+    name = st.session_state.get("_llm_provider", "Custom")
+    conf = _LLM_PRESETS.get(name)
+    if conf:
+        st.session_state["_llm_base_input"] = conf["base_url"]
+        st.session_state["_llm_model_input"] = conf["model"]
+
+
+# Auto-apply preset on first load (before the widget renders on subsequent runs)
+if st.session_state.get("_llm_provider") and not st.session_state.get("_llm_base_input"):
+    _apply_llm_preset()
+
+
 with discover_tab:
     nl_input = st.text_input(
         "Describe your dataset",
@@ -88,6 +124,13 @@ with discover_tab:
         st.caption(
             "Bring your own API key for NL discovery. "
             "Works with any OpenAI-compatible endpoint."
+        )
+        st.selectbox(
+            "Provider",
+            list(_LLM_PRESETS.keys()),
+            key="_llm_provider",
+            on_change=_apply_llm_preset,
+            label_visibility="collapsed",
         )
         _llm_key = st.text_input(
             "API Key",
@@ -104,7 +147,7 @@ with discover_tab:
             placeholder="https://generativelanguage.googleapis.com/v1beta/openai",
             key="_llm_base_input",
             help=(
-                "Leave empty for default (Gemini). Common: "
+                "Auto-filled from provider preset. Change for custom endpoints: "
                 "https://api.groq.com/openai/v1, "
                 "https://openrouter.ai/api/v1"
             ),
@@ -113,7 +156,7 @@ with discover_tab:
             "Model",
             placeholder="gemini-2.0-flash",
             key="_llm_model_input",
-            help="Leave empty for default (Gemini 2.0 Flash).",
+            help="Auto-filled from provider preset. Change for custom models.",
         )
 
 with browse_tab:
