@@ -33,8 +33,14 @@ class TestGenerateColumn:
         rng = np.random.default_rng(42)
         data = generator.generate_column("name", "text", {}, 50, rng)
         assert len(data) == 50
-        assert all(isinstance(v, str) for v in data)
-        assert all("Name" in str(v) for v in data)
+        assert all(isinstance(v, str) and len(v) > 0 for v in data)
+
+    def test_generates_text_unknown_column(self):
+        """Unrecognized text column names still get placeholder fallback."""
+        rng = np.random.default_rng(42)
+        data = generator.generate_column("custom_note", "text", {}, 10, rng)
+        assert len(data) == 10
+        assert all("Custom Note" in str(v) for v in data)
 
     def test_generates_boolean(self):
         rng = np.random.default_rng(42)

@@ -236,6 +236,7 @@ def _result_to_schema(result: NLDiscoveryResult) -> list[dict]:
         entry = {
             "column_name": col.column_name,
             "data_type": col.data_type,
+            "description": col.description or "",
         }
         if col.distribution_hint:
             entry["distribution_hint"] = col.distribution_hint

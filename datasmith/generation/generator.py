@@ -163,7 +163,12 @@ def generate_column(col_name: str, data_type: str,
         return data
 
     elif dtype in ("text", "string"):
-        # Text columns: generate placeholder values
+        # Try realistic text profiles first (word banks, ID generators, etc.)
+        from datasmith.generation.text_profiles import choose_text_generator
+        text_gen = choose_text_generator(col_name, stats.get("description", ""))
+        if text_gen:
+            return text_gen(n, rng, **stats)
+        # Fallback: column-name-templated placeholders
         template = stats.get("template", col_name.replace("_", " ").title())
         return np.array([f"{template} {i+1}" for i in range(n)])
 
