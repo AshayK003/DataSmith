@@ -16,6 +16,8 @@ Most synthetic data tools require ML training (SDV, CTGAN), cloud calls (GPT), o
 
 A Schema Knowledge Graph stores real dataset schemas (column names, types, distributions) crawled from Kaggle, UCI, and direct URLs. An Imperfection Fingerprint engine captures null patterns, outlier profiles, and noise signatures from real data. The generator composes these into realistic datasets using numpy/scipy — no training, no API calls.
 
+DataSmith also includes a **batched iterative generation mode** that measures quality per batch (KS statistics, null-rate drift, correlation preservation) and adjusts parameters between batches — producing statistically closer distributions without adding ML or LLM dependencies.
+
 **When to use it:**
 - You need test data that *looks real* (not random noise) for QA or staging environments
 - You're building a demo and need plausible data across domains
@@ -48,6 +50,11 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 └────────────┬─────────────────────────────────┘
              │ calls
 ┌────────────▼─────────────────────────────────┐
+│     Batched Pipeline (pipeline.py)           │
+│  generate → evaluate → adjust → next batch  │
+└────────────┬─────────────────────────────────┘
+             │ calls
+┌────────────▼─────────────────────────────────┐
 │          Generation Engine (engine.py)        │
 │  schema_from_kg() → generate_dataset()       │
 │           │                │                  │
@@ -77,6 +84,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 | Layer | What It Does | Key Files |
 |-------|-------------|-----------|
 | **UI** | Streamlit frontend — domain selection, schema editor (AG Grid), preview, CSV/JSON export | `app.py`, `pages/01_Generate.py`, `pages/02_About.py` |
+| **Pipeline** | Iterative batched generation with per-batch quality feedback, retry, and parameter adjustment | `generation/pipeline.py` |
 | **Engine** | Orchestrates generation: schema resolution → data generation → imperfection injection | `generation/engine.py` |
 | **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime) | `generation/generator.py` |
 | **Knowledge Graph** | SQLite-backed schema store with FTS5 search — domains, datasets, column schemas, LLM cache, imperfection profiles | `schema/knowledge_graph.py` |
@@ -100,8 +108,11 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 │   ├── profiles.py           # Domain imperfection fingerprints
 │   └── injector.py           # Apply imperfections to clean data
 ├── generation/
+│   ├── engine.py             # Pipeline orchestrator
 │   ├── generator.py          # numpy/scipy data generation
-│   └── engine.py             # Pipeline orchestrator
+│   ├── pipeline.py           # Batched iterative generation with quality feedback
+│   ├── quality.py            # KS-stat, null-rate, correlation metrics
+│   └── adjuster.py           # Parameter adjustment between batches
 ├── llm/
 │   ├── client.py             # OpenAI-compatible API client
 │   ├── discovery.py          # NL → schema discovery pipeline
@@ -180,10 +191,11 @@ uv run pytest -k "edge"          # Only edge-case tests
 uv run pytest --cov=datasmith    # Coverage report
 ```
 
-**94 tests** across 8 files. Test structure mirrors source structure:
+**114 tests** across 9 files. Test structure mirrors source structure:
 
 | Test File | What It Covers | Tests |
 |-----------|---------------|-------|
+| `test_batched_pipeline.py` | Quality metrics, parameter adjustment, batched generation loop | 20 |
 | `test_generation.py` | Core generator, pipeline, schema resolution | 24 |
 | `test_generation_edge.py` | Edge cases: empty schema, degenerate distributions, reversed ranges | 4 |
 | `test_imperfections.py` | Analyzer + injector: nulls, outliers, noise, skew, profiles | 30 |
