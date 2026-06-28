@@ -57,19 +57,37 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ┌────────────▼─────────────────────────────────┐
 │          Generation Engine (engine.py)        │
 │  schema_from_kg() → generate_dataset()       │
-│           │                │                  │
-│      ┌────▼────┐     ┌────▼──────┐           │
-│      │ Schema  │     │ Generator │           │
-│      │   KG    │     │ (numpy/   │           │
-│      │(SQLite) │     │  scipy)   │           │
-│      └─────────┘     └────┬──────┘           │
-│                           │                   │
-│                     ┌────▼──────┐            │
-│                     │ Injector  │            │
-│                     │(nulls,    │            │
-│                     │ outliers, │            │
-│                     │ noise)    │            │
-│                     └───────────┘            │
+│      │           │              │             │
+│  ┌───▼───┐  ┌────▼─────┐  ┌────▼──────┐     │
+│  │Schema │  │ Schema   │  │ Generator │     │
+│  │  KG   │  │Enricher  │  │ (numpy/   │     │
+│  │(SQLite)│  │(semantic │  │  scipy)   │     │
+│  │       │  │ types)   │  │           │     │
+│  └───────┘  └──────────┘  └────┬──────┘     │
+│                                 │             │
+│                           ┌────▼──────┐      │
+│                           │ Injector  │      │
+│                           │(nulls,    │      │
+│                           │ outliers, │      │
+│                           │ noise)    │      │
+│                           └────┬──────┘      │
+│                                │              │
+│                           ┌────▼──────┐      │
+│                           │ Validator │      │
+│                           │(integer,  │      │
+│                           │ bounds,   │      │
+│                           │ format,   │      │
+│                           │ diversity)│      │
+│                           └────┬──────┘      │
+│                                │              │
+│                           ┌────▼──────┐      │
+│                           │  Return   │      │
+│                           │ DataFrame │      │
+│                           └───────────┘      │
+│                          (↻ auto-retry       │
+│                           on validation      │
+│                           failure up to      │
+│                           3 × seed+1)        │
 └──────────────────────────────────────────────┘
          ▲
          │ crawls
@@ -85,10 +103,12 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 |-------|-------------|-----------|
 | **UI** | Streamlit frontend — domain selection, schema editor (AG Grid), preview, CSV/JSON export | `app.py`, `pages/01_Generate.py`, `pages/02_About.py` |
 | **Pipeline** | Iterative batched generation with per-batch quality feedback, retry, and parameter adjustment | `generation/pipeline.py` |
-| **Engine** | Orchestrates generation: schema resolution → data generation → imperfection injection | `generation/engine.py` |
+| **Engine** | Orchestrates generation: schema resolution → enrichment → data generation → imperfection injection → validation → retry | `generation/engine.py` |
+| **Schema Enricher** | Maps column names to semantic types (year→integer, email→email-generator), injects missing constraints (min/max, distribution hints), and sets semantic descriptions | `schema/enricher.py` |
 | **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime) | `generation/generator.py` |
 | **Knowledge Graph** | SQLite-backed schema store with FTS5 search — domains, datasets, column schemas, LLM cache, imperfection profiles | `schema/knowledge_graph.py` |
 | **Crawler** | Multi-source schema extraction from Kaggle, UCI Archive, and direct CSV URLs | `schema/crawler.py` |
+| **Quality Validator** | Post-generation validation: integer-column fraction check, bounds enforcement, email format, null integrity, diversity gate — auto-retries on failure | `quality/validator.py` |
 | **Imperfections** | Statistical analysis + injection of nulls (MCAR/MAR/MNAR), outliers (IQR), noise (rounding), distribution skew | `imperfections/*.py` |
 | **LLM** | OpenAI-compatible client with provider abstraction (Groq, OpenRouter, Gemini) — optional NL → schema discovery | `llm/*.py` |
 
@@ -96,13 +116,16 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 
 ## Project Structure
 
-```
+```                               
 📦 datasmith/
 ├── core/database.py          # SQLite with WAL mode + context manager
 ├── schema/
 │   ├── models.py             # Pydantic models for datasets & columns
 │   ├── knowledge_graph.py    # KG CRUD, FTS5 search, domain queries
+│   ├── enricher.py           # Semantic column-name → type mapping + constraints
 │   └── crawler.py            # Multi-source schema extraction
+├── quality/
+│   └── validator.py          # Post-generation quality checks + auto-retry
 ├── imperfections/
 │   ├── analyzer.py           # Statistical analysis of real data
 │   ├── profiles.py           # Domain imperfection fingerprints
@@ -130,7 +153,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ├── crawl_schemas.py          # Legacy CLI (crawl only)
 └── analyze_domains.py        # Domain fingerprint analysis CLI
 
-📦 tests/                     # 94 tests across 8 files
+📦 tests/                     # 151 tests across 10 files
 ```
 
 ---
@@ -190,7 +213,7 @@ uv run pytest -k "edge"          # Only edge-case tests
 uv run pytest --cov=datasmith    # Coverage report
 ```
 
-**114 tests** across 9 files. Test structure mirrors source structure:
+**151 tests** across 10 files. Test structure mirrors source structure:
 
 | Test File | What It Covers | Tests |
 |-----------|---------------|-------|
@@ -202,6 +225,8 @@ uv run pytest --cov=datasmith    # Coverage report
 | `test_knowledge_graph.py` | KG CRUD: domains, datasets, columns, cache, profiles, migration | 16 |
 | `test_llm.py` | LLM discovery: caching, parsing, response → schema mapping | 10 |
 | `test_llm_client.py` | LLM client: config, error handling, timeouts | 4 |
+| `test_enricher.py` | Semantic schema enrichment: integer types, distributions, constraint injection | 14 |
+| `test_validator.py` | Quality checks: integer/bounds/format/null/diversity gates, auto-retry integration | 22 |
 
 ### Writing Tests
 
