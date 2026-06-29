@@ -136,3 +136,66 @@ class TestDiscoverSchema:
         with patch("datasmith.llm.discovery.is_available", return_value=False):
             cached = discover_schema(kg, "video game sales dataset")
         assert cached is not None
+
+
+class TestVerifySchema:
+    """Tests for LLM schema verification (critique.py)."""
+
+    def test_parses_valid_json(self):
+        from datasmith.llm.critique import _parse_verification_response
+        r = _parse_verification_response(
+            '{"relevant": true, "issues_found": 0, "summary": "OK", '
+            '"missing_columns": [], "extra_columns": [], "type_suggestions": []}'
+        )
+        assert r is not None
+        assert r.relevant is True
+
+    def test_parses_with_issues(self):
+        from datasmith.llm.critique import _parse_verification_response
+        r = _parse_verification_response(
+            '{"relevant": false, "issues_found": 2, "summary": "Missing age", '
+            '"missing_columns": ["age"], "extra_columns": ["x"], '
+            '"type_suggestions": ["age should be integer"]}'
+        )
+        assert r is not None
+        assert r.relevant is False
+        assert "age" in r.missing_columns
+
+    def test_parses_markdown_fences(self):
+        from datasmith.llm.critique import _parse_verification_response
+        r = _parse_verification_response(
+            '```json\n{"relevant": true, "issues_found": 0, "summary": "OK", '
+            '"missing_columns": [], "extra_columns": [], "type_suggestions": []}\n```'
+        )
+        assert r is not None
+        assert r.relevant is True
+
+    def test_parses_extra_commentary(self):
+        from datasmith.llm.critique import _parse_verification_response
+        r = _parse_verification_response(
+            'Here:\n{"relevant": false, "issues_found": 1, "summary": "n/a", '
+            '"missing_columns": [], "extra_columns": [], "type_suggestions": []}\nDone.'
+        )
+        assert r is not None
+        assert r.issues_found == 1
+
+    def test_invalid_json_returns_none(self):
+        from datasmith.llm.critique import _parse_verification_response
+        assert _parse_verification_response("not json") is None
+        assert _parse_verification_response("") is None
+
+    def test_returns_none_without_llm(self):
+        from datasmith.llm.critique import verify_schema
+        result = verify_schema(
+            schema=[{"column_name": "x", "data_type": "text"}],
+            user_prompt="test",
+        )
+        assert result is None  # No LLM configured in test env
+
+    def test_returns_none_with_empty_prompt(self):
+        from datasmith.llm.critique import verify_schema
+        result = verify_schema(
+            schema=[{"column_name": "x", "data_type": "text"}],
+            user_prompt="",
+        )
+        assert result is None

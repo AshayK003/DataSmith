@@ -83,6 +83,23 @@ def batched_generate(
     if not schema:
         raise ValueError(f"No schema found for domain '{domain_name}'")
 
+    # Step 1.5: Verify schema relevance against user prompt (once, before batches)
+    if user_prompt:
+        from datasmith.llm.critique import verify_schema as _verify_schema
+        verification = _verify_schema(
+            schema=schema,
+            user_prompt=user_prompt,
+            api_key=(llm_config or {}).get("api_key", ""),
+            base_url=(llm_config or {}).get("base_url", ""),
+            model=(llm_config or {}).get("model", ""),
+        )
+        if verification and not verification.relevant:
+            logger.warning(
+                "Schema relevance: %d issues — %s",
+                verification.issues_found,
+                verification.summary[:150],
+            )
+
     # Step 2: Resolve imperfection profile once
     profile = None
     if inject_imperfections:

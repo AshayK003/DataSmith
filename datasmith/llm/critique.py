@@ -60,7 +60,162 @@ class CritiqueResult(BaseModel):
     )
 
 
-# ── System prompt ─────────────────────────────────────────────────────────
+class SchemaVerificationResult(BaseModel):
+    """Result of verifying schema completeness against the user prompt."""
+
+    relevant: bool = Field(description="Whether the schema is relevant to the original request")
+    issues_found: int = Field(description="Number of issues identified")
+    summary: str = Field(description="One-paragraph assessment")
+    missing_columns: list[str] = Field(
+        default_factory=list,
+        description="Columns mentioned in the user request but missing from the schema",
+    )
+    extra_columns: list[str] = Field(
+        default_factory=list,
+        description="Columns present in the schema but not relevant to the request",
+    )
+    type_suggestions: list[str] = Field(
+        default_factory=list,
+        description="Suggested type changes (e.g. 'quantity should be integer not numeric')",
+    )
+
+
+# ── Schema verification prompt ─────────────────────────────────────────────
+
+_VERIFY_PROMPT = (
+    "You are a data schema reviewer. Given a user's natural language request "
+    "and a proposed column schema, verify the schema is complete and relevant.\n\n"
+    "You will receive:\n"
+    "1. The original user request (what they wanted)\n"
+    "2. The proposed column schema\n\n"
+    "Your review criteria:\n"
+    "- COMPLETENESS: Does every column the user asked for appear in the schema?\n"
+    "- RELEVANCE: Does every schema column belong in this dataset given the request?\n"
+    "- TYPE ACCURACY: Are data types appropriate? (quantities = integer, "
+    "names = text, prices = numeric)\n\n"
+    "Respond with ONLY valid JSON matching this schema:\n"
+    "{\n"
+    '  "relevant": true,\n'
+    '  "issues_found": 0,\n'
+    '  "summary": "Brief assessment paragraph",\n'
+    '  "missing_columns": [],\n'
+    '  "extra_columns": [],\n'
+    '  "type_suggestions": []\n'
+    "}\n\n"
+    "Rules:\n"
+    "- Be concise and specific. Only flag real issues, not stylistic preferences.\n"
+    "- 'missing_columns' should only include columns the user EXPLICITLY asked for.\n"
+    "- 'extra_columns' should only include columns clearly outside the request's scope.\n"
+    "- If the schema is complete and relevant, return issues_found=0 and relevant=true.\n"
+    "- IMPORTANT: Respond with ONLY valid JSON. No markdown fences, no commentary.\n"
+)
+
+
+def _parse_verification_response(content: str) -> Optional[SchemaVerificationResult]:
+    """Parse LLM JSON response into SchemaVerificationResult."""
+    text = content.strip()
+
+    # Strip markdown code fences
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0].strip()
+    elif "```" in text:
+        parts = text.split("```")
+        candidates = [p.strip() for p in parts if p.strip() and "{" in p]
+        if candidates:
+            text = max(candidates, key=len)
+
+    try:
+        data = json.loads(text)
+        return SchemaVerificationResult(**data)
+    except (json.JSONDecodeError, Exception):
+        pass
+
+    brace_start = text.find("{")
+    if brace_start >= 0:
+        for brace_end in range(len(text) - 1, brace_start, -1):
+            if text[brace_end] == "}":
+                candidate = text[brace_start:brace_end + 1]
+                try:
+                    data = json.loads(candidate)
+                    return SchemaVerificationResult(**data)
+                except (json.JSONDecodeError, Exception):
+                    continue
+
+    logger.warning("Failed to parse schema verification response")
+    return None
+
+
+def verify_schema(
+    schema: list[dict],
+    user_prompt: str,
+    api_key: str = "",
+    base_url: str = "",
+    model: str = "",
+) -> Optional[SchemaVerificationResult]:
+    """Verify schema completeness and relevance against the user prompt.
+
+    Runs BEFORE generation to catch missing columns or type mismatches
+    at the schema level.
+
+    Args:
+        schema: Column schema list (after enrichment + user edits).
+        user_prompt: Original user description of what they wanted.
+        api_key, base_url, model: Optional LLM config overrides.
+
+    Returns:
+        SchemaVerificationResult with issues, or None if LLM unavailable.
+    """
+    if not user_prompt or not is_available():
+        return None
+
+    logger.info("Running schema verification for prompt: %.80s", user_prompt)
+
+    # Build schema text
+    schema_lines = []
+    for col in schema:
+        name = col.get("column_name", "?")
+        dtype = col.get("data_type", "text")
+        desc = col.get("description", "")
+        schema_lines.append(f"  - {name} ({dtype}): {desc}")
+    schema_text = "\n".join(schema_lines)
+
+    prompt = (
+        f"ORIGINAL REQUEST:\n{user_prompt}\n\n"
+        f"PROPOSED SCHEMA ({len(schema)} columns):\n{schema_text}\n\n"
+        f"Is this schema complete and relevant for the request? Return JSON."
+    )
+
+    content = chat_complete(
+        system_prompt=_VERIFY_PROMPT,
+        user_prompt=prompt,
+        response_format={"type": "json_object"},
+        temperature=0.1,
+        max_tokens=1000,
+        api_key=api_key,
+        base_url=base_url,
+        model=model,
+    )
+
+    if not content:
+        logger.warning("Schema verification LLM call failed")
+        return None
+
+    result = _parse_verification_response(content)
+    if not result:
+        logger.warning("Could not parse schema verification response")
+        return None
+
+    logger.info(
+        "Schema verification: %s (%d issues, %d missing, %d extra, %d type suggestions)",
+        "PASS" if result.relevant else "ISSUES FOUND",
+        result.issues_found,
+        len(result.missing_columns),
+        len(result.extra_columns),
+        len(result.type_suggestions),
+    )
+
+    return result
+
 
 _CRITIQUE_PROMPT = (
     "You are a senior data engineer reviewing a synthetic dataset. "

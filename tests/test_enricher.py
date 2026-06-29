@@ -66,7 +66,7 @@ class TestEnrichSchema:
 
     def test_handles_unknown_numeric_column(self):
         """Numeric columns without semantic match get generic defaults."""
-        cols = [{"column_name": "custom_score", "data_type": "numeric"}]
+        cols = [{"column_name": "custom_field", "data_type": "numeric"}]
         result = enrich_schema(cols)
         assert result[0]["data_type"] == "numeric"
         # Falls through to _fill_range with normal distribution

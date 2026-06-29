@@ -27,39 +27,46 @@ logger = logging.getLogger(__name__)
 _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
     # ── Integer columns ──────────────────────────────────────────────────
     # Years — always integer, recent range
-    (re.compile(r"^(year|birth_year|fiscal_year|model_year|year_of|year_)\b", re.I),
+    # Matches "year", "year_of_birth", "birth_year", "graduation_year", etc.
+    (re.compile(r"(?:^year(?:_|$)|_year$)", re.I),
      {"data_type": "integer", "min": 2015, "max": 2024,
       "distribution_hint": "uniform"}),
 
     # Ages — integer, reasonable demographic range
-    (re.compile(r"^(age|customer_age|patient_age|age_group)$", re.I),
+    # Matches "age", "customer_age", "age_years", "age_at_admission", etc.
+    (re.compile(r"(?:^|_)(?:age|customer_age|patient_age|age_group)(?:$|_)", re.I),
      {"data_type": "integer", "min": 18, "max": 90,
       "distribution_hint": "normal", "mean": 45, "std": 15}),
 
     # Quantities / counts — integer, right-skewed
-    (re.compile(r"^(quantity|qty|count|stock|units?|items?|num_)\b", re.I),
+    # Matches "quantity", "quantity_sold", "order_qty", "stock_count", "num_items", etc.
+    (re.compile(r"(?:^|_)(?:quantity|qty|count|units_sold|items_sold|num)(?:$|_)", re.I),
      {"data_type": "integer", "min": 0, "max": 1000,
       "distribution_hint": "powerlaw"}),
 
     # ── Numeric columns ──────────────────────────────────────────────────
     # Prices / amounts — right-skewed (powerlaw), broad range
-    (re.compile(r"^(price|amount|cost|fee|fare|revenue|salary|income|"
-                r"payment|charge|total|subtotal|balance|budget)$", re.I),
+    # Matches "price", "unit_price", "total_amount", "price_per_unit", etc.
+    (re.compile(r"(?:^|_)(?:price|amount|cost|fee|fare|revenue|salary|income|"
+                r"payment|charge|total|subtotal|balance|budget)(?:$|_)", re.I),
      {"data_type": "numeric", "min": 0.99, "max": 999.99,
       "distribution_hint": "powerlaw"}),
 
     # Time-based rates (nightly, hourly, daily, etc.) — monetary, not percentages
-    (re.compile(r"(nightly|hourly|daily|weekly|monthly|yearly)[ _-]?rate", re.I),
+    (re.compile(r"(?:^|_)(?:nightly|hourly|daily|weekly|monthly|yearly)"
+                r"[ _-]?rate(?:$|_)", re.I),
      {"data_type": "numeric", "min": 0.99, "max": 999.99,
       "distribution_hint": "powerlaw"}),
 
     # Discount rates / percentages — bounded [0, 100]
-    (re.compile(r"(percent|percentage|pct|discount[_ -]?rate|tax[_ -]?rate|interest[_ -]?rate)", re.I),
+    (re.compile(r"(?:percent|percentage|pct|discount[_ -]?rate|tax[_ -]?rate|"
+                r"interest[_ -]?rate)", re.I),
      {"data_type": "numeric", "min": 0, "max": 100,
       "distribution_hint": "normal", "mean": 25, "std": 15}),
 
     # Ratings (1-5 or 1-10)
-    (re.compile(r"^(rating|score|grade|rank|stars|satisfaction)$", re.I),
+    # Matches "rating", "satisfaction_score", "exam_grade", etc.
+    (re.compile(r"(?:^|_)(?:rating|score|grade|rank|stars|satisfaction)(?:$|_)", re.I),
      {"data_type": "numeric", "min": 1, "max": 5,
       "distribution_hint": "normal", "mean": 3.5, "std": 1.0}),
 

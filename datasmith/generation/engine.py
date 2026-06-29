@@ -122,6 +122,24 @@ def generate_dataset(kg: KnowledgeGraph,
         # Step 1.5: Enrich schema with semantic constraints
         schema = enrich_schema(schema)
 
+        # Step 1.6: Verify schema relevance against user prompt
+        # Catches missing columns and type mismatches BEFORE data is generated
+        if user_prompt:
+            from datasmith.llm.critique import verify_schema as _verify_schema
+            verification = _verify_schema(
+                schema=schema,
+                user_prompt=user_prompt,
+                api_key=llm_cfg.get("api_key", ""),
+                base_url=llm_cfg.get("base_url", ""),
+                model=llm_cfg.get("model", ""),
+            )
+            if verification and not verification.relevant:
+                logger.warning(
+                    "Schema relevance: %d issues — %s",
+                    verification.issues_found,
+                    verification.summary[:150],
+                )
+
         # Steps 2-4: Generate → Inject → Validate (with retries)
         best_df = None
         last_result = None

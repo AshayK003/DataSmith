@@ -248,7 +248,7 @@ if resolved_schema:
     fresh_data = []
     for col in resolved_schema:
         dtype = col.get("data_type", "text").lower()
-        display = "numeric" if dtype in ("numeric", "integer") else dtype
+        display = dtype  # preserve integer vs numeric distinction
         fresh_data.append({
             "column_name": col.get("column_name", "col"),
             "data_type": display,
@@ -276,7 +276,7 @@ if resolved_schema:
         "data_type",
         header_name="Type",
         cellEditor="agSelectCellEditor",
-        cellEditorParams={"values": ["text", "numeric", "boolean", "datetime"]},
+        cellEditorParams={"values": ["text", "numeric", "integer", "boolean", "datetime"]},
         width=120,
     )
     # Numeric params
@@ -379,7 +379,7 @@ if resolved_schema:
             "column_name": sanitized,
             "data_type": row.get("data_type", "text"),
         }
-        if entry["data_type"] == "numeric":
+        if entry["data_type"] in ("numeric", "integer"):
             entry["mean"] = _safe_float(row.get("mean"), 50.0)
             entry["std"] = _safe_float(row.get("std"), 20.0)
             entry["min"] = _safe_float(row.get("min"), 0.0)
