@@ -113,7 +113,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 | **Engine** | Orchestrates generation: schema resolution → enrichment → data generation → correlation → imperfection injection → validation → retry | `generation/engine.py` |
 | **Schema Enricher** | Maps column names to semantic types (year→integer, email→email-generator), injects missing constraints (min/max, distribution hints), and sets semantic descriptions | `schema/enricher.py` |
 | **Correlation Engine** | Induces pairwise column correlations via Iman-Conover rank-matching — reorders values to match target rho while preserving marginal distributions | `generation/correlator.py` |
-| **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime) | `generation/generator.py` |
+| **Generator** | numpy/scipy-based column generation (numeric, integer, text, boolean, datetime). Text values drawn from 20+ word banks and regex-driven generators for names, locations, IDs, emails, categories, and more | `generation/generator.py`, `generation/text_profiles.py` |
 | **Critique** | LLM-powered audit that reviews generated data against the original prompt, drops extra columns, fixes types, clamps unrealistic values | `llm/critique.py` |
 | **Knowledge Graph** | SQLite-backed schema store with FTS5 search — domains, datasets, column schemas, LLM cache, imperfection profiles | `schema/knowledge_graph.py` |
 | **Crawler** | Multi-source schema extraction from Kaggle, UCI Archive, and direct CSV URLs | `schema/crawler.py` |
@@ -142,6 +142,7 @@ Open **http://localhost:8501** → select a domain → edit schema → generate 
 ├── generation/
 │   ├── engine.py             # Pipeline orchestrator
 │   ├── generator.py          # numpy/scipy data generation
+│   ├── text_profiles.py      # Word banks + regex-based text generators (names, locations, IDs, categories)
 │   ├── correlator.py         # Iman-Conover pairwise correlation induction
 │   ├── pipeline.py           # Batched iterative generation with quality feedback
 │   ├── quality.py            # KS-stat, null-rate, correlation metrics

@@ -48,8 +48,13 @@ _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
      {"data_type": "numeric", "min": 0.99, "max": 999.99,
       "distribution_hint": "powerlaw"}),
 
+    # Time-based rates (nightly, hourly, daily, etc.) — monetary, not percentages
+    (re.compile(r"(nightly|hourly|daily|weekly|monthly|yearly)[ _-]?rate", re.I),
+     {"data_type": "numeric", "min": 0.99, "max": 999.99,
+      "distribution_hint": "powerlaw"}),
+
     # Discount rates / percentages — bounded [0, 100]
-    (re.compile(r"(percent|percentage|rate|ratio|pct|discount|tax|interest)", re.I),
+    (re.compile(r"(percent|percentage|pct|discount[_ -]?rate|tax[_ -]?rate|interest[_ -]?rate)", re.I),
      {"data_type": "numeric", "min": 0, "max": 100,
       "distribution_hint": "normal", "mean": 25, "std": 15}),
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.10.0 (2026-06-29)
+
+### Added
+
+- **Expanded text generation coverage** — `text_profiles.py` now covers more column types:
+  - Medical: `diagnosis` (20 conditions), `blood_type` (A+, O-, AB+, etc.)
+  - Education: `major` (20 fields of study), `student_id` (STU-XXXXXX)
+  - Hospitality: `hotel_name` (12 brand names), `booking_id` (BKG-XXXXXX)
+  - Support: `ticket_id` (TCK-XXXXXX), `priority` (Critical/High/Medium/Low)
+  - Staff: `assigned_to`, `reported_by` now generate real names instead of sentences
+- **Time-based rate support in schema enricher** — `nightly_rate`, `hourly_rate`, `daily_rate`, `weekly_rate`, `monthly_rate`, and `yearly_rate` columns are correctly identified as price-like (powerlaw, max=999.99) instead of being treated as percentages (min=0, max=100)
+
+### Fixed
+
+- **Name columns no longer generate sentences** — `full_name`, `first_name`, `last_name`, `customer_name`, and `user_name` now correctly produce first+last names. Root cause: `choose_text_generator()` was replacing underscores with spaces, breaking anchored regex patterns that use underscores.
+- **Email columns no longer return city names** — `email_address` columns now produce proper email addresses (e.g. `user@domain.com`). Root cause: the address rule fired before the email rule in `_TEXT_RULES`. Email rule moved ahead of address rule.
+- **Blood type hijacked by generic type rule** — `blood_type` now shows real blood types instead of single-letter category labels. Root cause: the generic `(categ|type|class|kind|segment)` rule matched "type" in "blood_type" first. Blood type rule moved before the generic rule.
+- **Integer dtype preserved with zero-rate imperfections** — `inject_nulls`, `inject_outliers`, and `inject_noise` no longer convert integer columns to `float64` when their respective injection rates are 0%. Conversion now happens only when nulls/outliers/noise are actually placed.
+- **Enricher rate filter narrowed** — the bare `rate` keyword was removed from the percentage detection pattern, preventing `nightly_rate`, `hourly_rate`, etc. from being capped at [0, 100]. Time-based rates are now routed to the price rule instead.
+
 ## v0.9.0 (2026-06-28)
 
 ### Added

@@ -40,13 +40,15 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         # Handle extension dtypes (pandas StringDtype, etc.) safely.
         if pd.api.types.is_bool_dtype(df[col].dtype):
             continue
-        # Convert integers to float64 to support NaN
-        if pd.api.types.is_integer_dtype(df[col].dtype):
-            df[col] = df[col].astype(np.float64)
 
         null_pct = pattern.get("null_pct", 0) / 100.0
         if null_pct <= 0:
             continue
+
+        # Convert integers to float64 to support NaN
+        # Done AFTER null_pct guard to avoid converting when no nulls will be injected
+        if pd.api.types.is_integer_dtype(df[col].dtype):
+            df[col] = df[col].astype(np.float64)
 
         n = len(df)
         missing_type = pattern.get("pattern", "MCAR")
@@ -118,15 +120,16 @@ def inject_outliers(df, profile: dict, rng: Optional[np.random.Generator] = None
     for col, pattern in outlier_patterns.items():
         if col not in df.columns:
             continue
+
+        outlier_pct = pattern.get("outlier_pct", 0) / 100.0
+        if outlier_pct <= 0:
+            continue
+
         if not pd.api.types.is_float_dtype(df[col].dtype):
             if pd.api.types.is_integer_dtype(df[col].dtype):
                 df[col] = df[col].astype(np.float64)
             else:
                 continue
-
-        outlier_pct = pattern.get("outlier_pct", 0) / 100.0
-        if outlier_pct <= 0:
-            continue
 
         n = len(df)
         n_outliers = max(1, int(n * outlier_pct))
@@ -168,26 +171,30 @@ def inject_noise(df, profile: dict, rng: Optional[np.random.Generator] = None) -
     for col, pattern in noise_patterns.items():
         if col not in df.columns:
             continue
+
+        rounding_pct = pattern.get("rounding_pct", 0)
+        precision = pattern.get("precision", 0.01)
+
+        if rounding_pct <= 0:
+            continue
+
+        # Convert integers to float64 to support rounding fractions
         if not pd.api.types.is_float_dtype(df[col].dtype):
             if pd.api.types.is_integer_dtype(df[col].dtype):
                 df[col] = df[col].astype(np.float64)
             else:
                 continue
 
-        rounding_pct = pattern.get("rounding_pct", 0)
-        precision = pattern.get("precision", 0.01)
-
         # Apply rounding to a subset of non-null values
-        if rounding_pct > 0:
-            series = df[col].dropna()
-            if len(series) == 0:
-                continue
-            n_round = max(1, int(len(series) * rounding_pct / 100))
-            round_idx = rng.choice(len(series), n_round, replace=False)
-            for idx in round_idx:
-                val = series.iloc[idx]
-                if not np.isnan(val) and precision > 0:
-                    df.loc[series.index[idx], col] = round(val / precision) * precision
+        series = df[col].dropna()
+        if len(series) == 0:
+            continue
+        n_round = max(1, int(len(series) * rounding_pct / 100))
+        round_idx = rng.choice(len(series), n_round, replace=False)
+        for idx in round_idx:
+            val = series.iloc[idx]
+            if not np.isnan(val) and precision > 0:
+                df.loc[series.index[idx], col] = round(val / precision) * precision
 
 
 def apply_profile(df, profile,

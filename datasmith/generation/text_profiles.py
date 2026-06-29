@@ -124,6 +124,34 @@ COUNTRIES = [
 
 CATEGORIES_ABC = ["A", "B", "C", "D", "E", "F"]
 
+BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+
+DIAGNOSES = [
+    "Type 2 Diabetes", "Hypertension", "Asthma", "COVID-19", "Pneumonia",
+    "Acute Bronchitis", "Urinary Tract Infection", "Fractured Tibia",
+    "Migraine", "Anxiety Disorder", "Major Depressive Disorder",
+    "Osteoarthritis", "Lower Back Pain", "Gastroenteritis",
+    "Cellulitis", "Dehydration", "Anemia", "Hyperthyroidism",
+    "Chronic Kidney Disease", "Coronary Artery Disease",
+]
+
+MAJORS = [
+    "Computer Science", "Business Administration", "Biology",
+    "Mechanical Engineering", "Psychology", "Economics",
+    "Electrical Engineering", "Political Science", "English Literature",
+    "Nursing", "Accounting", "Marketing", "Chemistry",
+    "Civil Engineering", "History", "Mathematics", "Physics",
+    "Philosophy", "Communications", "Environmental Science",
+]
+
+PRIORITY_LEVELS = ["Critical", "High", "Medium", "Low"]
+
+HOTEL_NAMES = [
+    "Grand Plaza", "Seaside Resort", "Mountain Lodge", "City Inn",
+    "Royal Suites", "Harbor View", "Sunset Hotel", "Skyline Tower",
+    "Garden Retreat", "Crystal Hotel", "Ocean Breeze", "Elite Stay",
+]
+
 EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com",
                  "rediffmail.com", "proton.me", "icloud.com", "aol.com",
                  "zoho.com", "mail.com", "fastmail.com", "gmx.com"]
@@ -268,6 +296,12 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _id_generator("ACC", 6)),
     (re.compile(r"(policy|claim)[ _-]?(id|num|number)", re.I),
      _id_generator("POL", 7)),
+    (re.compile(r"(booking|reservation)[ _-]?(id|num|number|ref|code)", re.I),
+     _id_generator("BKG", 6)),
+    (re.compile(r"(ticket|incident|case)[ _-]?(id|num|number|ref)", re.I),
+     _id_generator("TCK", 6)),
+    (re.compile(r"(student|enrol|registration)[ _-]?(id|num|number)", re.I),
+     _id_generator("STU", 6)),
 
     # Location-like columns
     (re.compile(r"^(city|town|location|place|region|district)$", re.I),
@@ -276,6 +310,15 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(CITIES)),
     (re.compile(r"country", re.I),
      _categorical_list(COUNTRIES)),
+
+
+    # Contact
+    (re.compile(r"email", re.I),
+     lambda n, rng, **_: np.array([
+         f"{rng.choice(FIRST_NAMES).lower()}.{rng.choice(LAST_NAMES).lower()}"
+         f"@{rng.choice(EMAIL_DOMAINS)}"
+         for _ in range(n)
+     ])),
     (re.compile(r"address", re.I),
      _categorical_list(CITIES)),
 
@@ -288,10 +331,14 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(JOB_TITLES)),
     (re.compile(r"(product[ _-]?name|item[ _-]?name|service[ _-]?name)", re.I),
      _categorical_list(PRODUCTS)),
+    (re.compile(r"(hotel[ _-]?name|hotel[ _-]?brand|lodging[ _-]?name)", re.I),
+     _categorical_list(HOTEL_NAMES)),
 
     # Categories
     (re.compile(r"(merchant|product|item)[ _-]?(categ|type|class|kind)", re.I),
      _categorical_list(MERCHANT_CATEGORIES)),
+    (re.compile(r"blood[ _-]?type", re.I),
+     _categorical_list(BLOOD_TYPES)),
     (re.compile(r"(categ|type|class|kind|segment)", re.I),
      _categorical_list(CATEGORIES_ABC)),
     (re.compile(r"payment.*(method|type|mode)", re.I),
@@ -302,6 +349,8 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(FRAUD_LABELS, weights=[0.95, 0.05])),
     (re.compile(r"(status|state|condition)", re.I),
      _categorical_list(STATUSES)),
+    (re.compile(r"(priority|urgency|severity|escalation[ _-]?level)", re.I),
+     _categorical_list(PRIORITY_LEVELS)),
     (re.compile(r"^(gender|sex)$", re.I),
      _categorical_list(GENDERS)),
     (re.compile(r"^(rating|score|grade|rank)$", re.I),
@@ -310,7 +359,7 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(BOOLEAN_YESNO)),
 
     # Names
-    (re.compile(r"^(name|full_name|customer_name|user_name)$", re.I),
+    (re.compile(r"^(name|full_name|customer_name|user_name|assigned_to|reported_by|contact_person)$", re.I),
      lambda n, rng, **_: np.array([
          f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
          for _ in range(n)
@@ -319,14 +368,6 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(FIRST_NAMES)),
     (re.compile(r"^(last_name|lname|surname)$", re.I),
      _categorical_list(LAST_NAMES)),
-
-    # Contact
-    (re.compile(r"email", re.I),
-     lambda n, rng, **_: np.array([
-         f"{rng.choice(FIRST_NAMES).lower()}.{rng.choice(LAST_NAMES).lower()}"
-         f"@{rng.choice(EMAIL_DOMAINS)}"
-         for _ in range(n)
-     ])),
     (re.compile(r"(phone|mobile|contact|cell)", re.I),
      lambda n, rng, **_: np.array([
          f"+91-{rng.integers(70000, 99999, 1)[0]}{rng.integers(10000, 99999, 1)[0]}"
@@ -338,6 +379,12 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      lambda n, rng, **_: np.array([
          f"{rng.choice(FIRST_NAMES).lower()}.com" for _ in range(n)
      ])),
+
+    # Medical / diagnoses
+    (re.compile(r"(diagnosis|diagnoses|medical[ _-]?condition|ailment)", re.I),
+     _categorical_list(DIAGNOSES)),
+    (re.compile(r"(major|field[ _-]?of[ _-]?study|discipline|specialization|concentration)", re.I),
+     _categorical_list(MAJORS)),
 
     # Description / notes columns
     (re.compile(r"(description|desc|summary|notes?|comment|feedback|review|remark)", re.I),
@@ -360,7 +407,7 @@ def choose_text_generator(col_name: str, description: str = ""
     (broader). This prevents description keywords like ``address`` from
     hijacking columns like ``email`` whose name would match a later rule.
     """
-    name_lower = col_name.lower().replace("_", " ").replace("-", " ").strip()
+    name_lower = col_name.lower().replace("-", " ").strip()
 
     # Pass 1: match column name only (highest priority)
     for pattern, factory in _TEXT_RULES:
