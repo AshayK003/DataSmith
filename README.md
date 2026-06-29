@@ -287,9 +287,68 @@ uv run streamlit run app.py --server.port $PORT --server.headless true
 
 ---
 
+## REST API
+
+DataSmith includes a FastAPI REST API for programmatic dataset generation.
+
+```bash
+# Start the API server
+uv run uvicorn api:app --host 0.0.0.0 --port 8000
+
+# OpenAPI docs at http://localhost:8000/docs
+```
+
+### Quick Start
+
+```bash
+# Generate 500 rows of e-commerce data
+curl -s http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "e-commerce", "n_rows": 500}' \
+  > data.csv
+
+# Discover schema from natural language
+curl -s http://localhost:8000/discover \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "patient records with age, diagnosis, lab results"}' \
+  | python -m json.tool
+
+# List available domains
+curl -s http://localhost:8000/domains | python -m json.tool
+```
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Health check / version |
+| `/generate` | POST | Generate a dataset (returns CSV or JSON) |
+| `/generate/batch` | POST | Batched generation for larger datasets |
+| `/discover` | POST | Natural language → schema discovery |
+| `/domains` | GET | List domains (optional `?q=search`) |
+| `/schemas/{domain}` | GET | Get enriched schema for a domain |
+| `/rate-limit` | GET | Check current rate limit status |
+
+### Rate Limiting
+
+Both the Streamlit UI and REST API share a per-session/IP rate limiter (default: **10 requests per minute**). Configurable via environment variables:
+
+| Env Var | Default | Description |
+|---------|---------|-------------|
+| `DATASMITH_RATE_MAX` | `10` | Max requests per window |
+| `DATASMITH_RATE_WINDOW` | `60` | Window in seconds |
+
+Rate limit headers are returned on every API response:
+- `X-RateLimit-Limit` — max requests per window
+- `X-RateLimit-Remaining` — requests left in current window
+- `X-RateLimit-Window` — window duration in seconds
+
+---
+
 ## Security Notes
 
-- **No authentication** — this is a local/single-user tool. Do not expose to the open internet without auth middleware.
+- **Rate limited** — 10 requests/minute per session/IP to prevent abuse. Configure via `DATASMITH_RATE_MAX` and `DATASMITH_RATE_WINDOW`.
+- **No authentication** (optional) — the API has no built-in auth. Add middleware or an API gateway for production use.
 - **LLM keys** — API keys live in environment variables, never in code or session state
 - **CSV output** — sanitized against formula injection (cells starting with `=`, `+`, `-`, `@` are prefixed with `'`)
 - **AG Grid** — JavaScript execution disabled (`allow_unsafe_jscode=False`)

@@ -16,6 +16,7 @@ from datasmith.llm.discovery import discover_schema
 from datasmith.schema.crawler import SEED_DOMAINS
 from datasmith.generation.engine import generate_dataset, schema_from_kg, get_generic_schema
 from datasmith.generation.pipeline import batched_generate
+from datasmith.core.ratelimit import RateLimiter
 from datasmith.ui import icons
 from datasmith.ui.components import render_header
 
@@ -223,6 +224,11 @@ elif use_domain:
 resolved_schema = st.session_state["_resolved_schema"]
 schema_source = st.session_state["_schema_source"]
 
+# ── Rate limiter (per-session) ────────────────────────────────────────
+
+_ui_limiter = RateLimiter(max_requests=10, window_seconds=60)
+
+
 # ── Schema editor ────────────────────────────────────────────────────────
 
 if resolved_schema:
@@ -419,6 +425,15 @@ if resolved_schema:
     if st.button("Generate Dataset", type="primary", use_container_width=True):
         if not edited or len(edited) == 0:
             st.error("At least one column is required.")
+            st.stop()
+
+        # Rate limit check
+        sess_key = st.session_state.get("session_id", st.session_state.get("_rerun_id", "default"))
+        allowed, remaining = _ui_limiter.check(sess_key)
+        if not allowed:
+            st.error(
+                "Rate limit reached (10 generations/minute). Please wait before generating again."
+            )
             st.stop()
 
         # Validate numeric ranges

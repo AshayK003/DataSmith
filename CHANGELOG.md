@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.12.0 (2026-06-29)
+
+### Added
+
+- **FastAPI REST API** — new `api.py` with programmatic dataset generation endpoints:
+  - `POST /generate` — generate a dataset (returns CSV or JSON)
+  - `POST /generate/batch` — batched generation for larger datasets
+  - `POST /discover` — natural language → schema discovery
+  - `GET /domains` — list available domains (with search via `?q=`)
+  - `GET /schemas/{domain}` — get enriched schema for a domain
+  - `GET /rate-limit` — check current rate limit status
+  - `GET /` — health check
+  - Auto-documented OpenAPI at `/docs`
+  - Rate-limited via the same in-memory sliding window as the UI
+  - Configurable via `DATASMITH_RATE_MAX` and `DATASMITH_RATE_WINDOW` env vars
+  - Start with `uv run uvicorn api:app --host 0.0.0.0 --port 8000`
+- **Rate limiting** — sliding window rate limiter (`datasmith/core/ratelimit.py`) applied to both the Streamlit UI and REST API:
+  - Thread-safe via `threading.RLock`
+  - Configurable max requests per time window
+  - Friendly error messages when rate limited
+  - Default: 10 requests/minute per session/IP
+  - Per-key tracking with automatic window expiry
+- **Rate limiter tests** — 10 tests covering bounds, concurrency, reset, key isolation, window expiry, and active key tracking.
+
+### Changed
+
+- **Streamlit UI generation now rate-limited** — per-session rate limit check before every generation. Shows a clear error message when the limit is reached.
+
 ## v0.11.0 (2026-06-29)
 
 ### Fixed

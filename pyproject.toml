@@ -14,6 +14,8 @@ dependencies = [
     "kagglehub>=0.3",
     "pydantic>=2.0",
     "streamlit-aggrid>=1.2.1.post2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
 ]
 
 [build-system]
