@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.11.0 (2026-06-29)
+
+### Fixed
+
+- **`StringDtype` crash (`'<' not supported between instances of 'str' and 'float'`)** — pandas auto-promotes string arrays to `StringDtype`, which causes `TypeError` when `check_bounds` in the validator compares them with numeric min/max bounds. `generate_from_schema()` now explicitly casts all text columns to `object` dtype after DataFrame creation, preventing the leak. This was the root cause of generation failures with text-heavy schemas.
+- **Integer columns skipped range validation in UI** — the "Generate Dataset" button only validated `min < max` for `numeric` columns, not `integer`. Integer columns with invalid ranges (e.g. `min` >= `max`) would generate silently bad data. Validation now covers both types.
+- **Generator fallback path bypassed `_coerce_stat`** — when a distribution sampler fails and generation falls back to uniform, the `stats.get("min", 0)` call read raw schema values without type coercion. If the LLM returned string-typed stats, this crashed with `rng.uniform("0", ...)`. Now wraps min/max in `_coerce_stat()`.
+- **`amount` removed from price enricher rule** — the regex pattern `amount` in the price rule matched compound names like `coverage_amount`, `loan_amount`, `policy_amount`, incorrectly assigning retail price ranges (0.99–999.99) to columns that are typically integer counts or high-value floats. `amount` removed from the price rule — these columns now fall through to generic numeric enrichment.
+- **Exception chain broken in `generate_dataset`** — the outer `except Exception` handler swallowed the original exception and raised a generic `RuntimeError` without chaining it, making every generation failure show "An internal error occurred during generation." with zero diagnostic information. Now uses `raise ... from e` to preserve the chain.
+- **Format validator false positives with `pd.NA`** — `check_formats` called `.astype(str)` on `StringDtype` columns, converting `pd.NA` values to string `"<NA>"` which then matched format checks incorrectly. Null-representation strings are now filtered out before validation.
+- **Duplicate `verify_schema()` call removed from engine** — `generate_dataset()` had the same `verify_schema()` LLM call that already runs in `batched_generate()`. Removed the duplicate to halve token spend per generation.
+
+### Changed
+
+- **LLM critique drop suggestions are now validated** — `critique_dataset()` verifies that columns named in `columns_to_drop` actually exist in the schema before dropping. Hallucinated column names from the LLM are logged and skipped instead of silently modifying the dataset.
+
 ## v0.10.0 (2026-06-29)
 
 ### Added

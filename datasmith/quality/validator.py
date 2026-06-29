@@ -182,6 +182,8 @@ def check_formats(df: pd.DataFrame, schema: list[dict]) -> list[ValidationError]
         desc = (col.get("description") or "").lower()
         series = df[name]
         non_null = series.dropna().astype(str)
+        # Drop string representations of null to avoid false positives
+        non_null = non_null[~non_null.isin(["<NA>", "nan", "NaN", "None"])]
         if len(non_null) == 0:
             continue
 

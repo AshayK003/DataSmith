@@ -394,6 +394,7 @@ def critique_dataset(
     cleaned = df.copy()
 
     # Step 1: Drop extra columns not in the original prompt
+    schema_names = set(c["column_name"] for c in schema)
     all_drops = set(result.columns_to_drop)
     for fix in result.fixes:
         if fix.action == "drop":
@@ -401,6 +402,12 @@ def critique_dataset(
 
     for col_name in all_drops:
         if col_name in cleaned.columns:
+            # Validate suggested drop exists in schema — ignore hallucinations
+            if col_name not in schema_names:
+                logger.warning(
+                    "LLM suggested dropping unknown column '%s' — ignored", col_name
+                )
+                continue
             logger.info("Dropping column '%s': not in original request", col_name)
             cleaned = cleaned.drop(columns=[col_name])
 

@@ -423,7 +423,7 @@ if resolved_schema:
 
         # Validate numeric ranges
         for col in edited:
-            if col.get("data_type") == "numeric":
+            if col.get("data_type") in ("numeric", "integer"):
                 if col.get("min", 0) >= col.get("max", 100):
                     st.error(
                         f"Column '{col['column_name']}': min ({col['min']}) must be less than max ({col['max']})."

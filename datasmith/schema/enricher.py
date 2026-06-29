@@ -47,7 +47,7 @@ _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
     # ── Numeric columns ──────────────────────────────────────────────────
     # Prices / amounts — right-skewed (powerlaw), broad range
     # Matches "price", "unit_price", "total_amount", "price_per_unit", etc.
-    (re.compile(r"(?:^|_)(?:price|amount|cost|fee|fare|revenue|salary|income|"
+    (re.compile(r"(?:^|_)(?:price|cost|fee|fare|revenue|salary|income|"
                 r"payment|charge|total|subtotal|balance|budget)(?:$|_)", re.I),
      {"data_type": "numeric", "min": 0.99, "max": 999.99,
       "distribution_hint": "powerlaw"}),

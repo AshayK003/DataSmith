@@ -143,7 +143,11 @@ def _generate_numeric_column(col_name: str, data_type: str, stats: dict,
             "%s: %s sampler failed (%s), falling back to uniform",
             col_name, dist_hint, e,
         )
-        data = rng.uniform(stats.get("min", 0), stats.get("max", 100), n)
+        data = rng.uniform(
+            _coerce_stat(stats.get("min"), 0),
+            _coerce_stat(stats.get("max"), 100),
+            n,
+        )
 
     # Ensure precision
     precision = _coerce_stat(stats.get("precision"))
@@ -251,10 +255,17 @@ def generate_from_schema(columns: list[dict], n: int,
         name = col.get("column_name", "col")
         dtype = col.get("data_type", "text")
         col_data = generate_column(name, dtype, col, n, rng)
-        # Ensure text columns use object dtype, not pandas StringDtype
-        if dtype in ("text", "string") and hasattr(col_data, "dtype") and col_data.dtype == np.dtype("O"):
-            data[name] = pd.array(col_data, dtype=object)
-        else:
-            data[name] = col_data
+        data[name] = col_data
 
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+
+    # Force text column dtypes to object — pandas auto-promotes
+    # string arrays to StringDtype, which breaks downstream numeric
+    # comparisons used by the validator and injector
+    for col in columns:
+        if col.get("data_type") in ("text", "string"):
+            name = col.get("column_name", "")
+            if name in df.columns:
+                df[name] = df[name].astype(object)
+
+    return df
