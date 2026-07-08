@@ -1,9 +1,6 @@
 """Tests for the sliding window rate limiter."""
 
 import time
-from collections import defaultdict
-
-import pytest
 
 from datasmith.core.ratelimit import RateLimiter
 

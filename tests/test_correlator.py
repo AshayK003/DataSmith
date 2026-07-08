@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from datasmith.generation.correlator import apply_correlations
 

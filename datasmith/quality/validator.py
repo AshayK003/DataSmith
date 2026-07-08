@@ -93,7 +93,8 @@ def check_integers(df: pd.DataFrame, schema: list[dict]) -> list[ValidationError
                     errors.append(ValidationError(
                         column=name,
                         check="integer_check",
-                        message=f"{bad}/{len(non_null)} values ({fraction:.1%}) have fractional parts",
+                        message=(f"{bad}/{len(non_null)} values "
+                                 f"({fraction:.1%}) have fractional parts"),
                         details={"bad_count": int(bad), "total": len(non_null)},
                     ))
 
@@ -232,7 +233,9 @@ def check_diversity(df: pd.DataFrame, schema: list[dict]) -> list[ValidationErro
             errors.append(ValidationError(
                 column=name,
                 check="diversity_check",
-                message=f"Column has {unique_count} unique value(s) across {len(non_null)} non-null rows — likely a generation failure",
+                message=(f"Column has {unique_count} unique value(s) "
+                         f"across {len(non_null)} non-null rows"
+                         " — likely a generation failure"),
                 details={"unique": unique_count, "non_null": len(non_null)},
             ))
 

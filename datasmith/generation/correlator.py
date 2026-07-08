@@ -135,7 +135,6 @@ def _reorder_by_rank(df: pd.DataFrame, col_name: str,
     (actual values) is preserved, only the order changes.
     """
     col_data = df[col_name].values
-    n = len(col_data)
 
     if col_data.dtype.kind in ("i", "f", "b"):
         # Numeric columns — handle NaN preservation

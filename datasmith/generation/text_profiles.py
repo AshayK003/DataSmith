@@ -204,8 +204,9 @@ def _id_generator(prefix: str, digits: int = 5) -> Callable:
     return _gen
 
 
-def _categorical_list(items: list[str], weights: list[float] | None = None
-                       ) -> Callable:
+def _categorical_list(
+    items: list[str], weights: list[float] | None = None
+) -> Callable:
     """Return a generator that picks randomly from a word list."""
     def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
         return np.array(rng.choice(items, size=n, p=weights))
@@ -271,6 +272,7 @@ def _template_from_desc(desc: str) -> Callable:
                       "when", "for", "the", "and", "are", "was", "has", "had"}]
     if content_words:
         base = content_words[0].title()
+
         def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
             suffixes = rng.integers(1, 10000, size=n)
             return np.array([f"{base}_{s}" for s in suffixes])
@@ -359,7 +361,9 @@ _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
      _categorical_list(BOOLEAN_YESNO)),
 
     # Names
-    (re.compile(r"^(name|full_name|customer_name|user_name|assigned_to|reported_by|contact_person)$", re.I),
+    (re.compile(
+        r"^(name|full_name|customer_name|user_name|assigned_to|reported_by|contact_person)$",
+        re.I),
      lambda n, rng, **_: np.array([
          f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
          for _ in range(n)

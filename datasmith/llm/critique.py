@@ -11,7 +11,6 @@ Only fires when an LLM is available. If not, returns the dataset unchanged.
 
 import json
 import logging
-import re
 from typing import Optional
 
 import pandas as pd

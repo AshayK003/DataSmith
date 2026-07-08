@@ -84,8 +84,10 @@ def generate_dataset(kg: KnowledgeGraph,
                      correlations: Optional[list[dict]] = None,
                      seed: Optional[int] = 42,
                      user_prompt: str = "",
-                     llm_config: Optional[dict] = None) -> pd.DataFrame:
-    """Full generation pipeline: schema → generate → correlate → inject → critique → validate → return.
+                     llm_config: Optional[dict] = None,
+                     ) -> pd.DataFrame:
+    """Full generation pipeline: schema → generate → correlate → inject
+    → critique → validate → return.
 
     Args:
         kg: KnowledgeGraph instance.

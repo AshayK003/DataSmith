@@ -6,10 +6,13 @@ from Kaggle/UCI/HuggingFace, indexed for full-text search by domain and column.
 
 import hashlib
 import json
+import logging
 from typing import Optional
 
 from datasmith.core.database import Database
 from datasmith.schema.models import ColumnSchema, DatasetSchema, Domain, DomainProfile
+
+logger = logging.getLogger(__name__)
 
 # ── Schema migrations ──────────────────────────────────────────────────────
 
