@@ -13,25 +13,21 @@ constraint the user or LLM already set.
 
 from __future__ import annotations
 
+import datetime
 import logging
 import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# ── Enrichment rules ─────────────────────────────────────────────────────────
-# (regex_pattern, enrichment_dict)
-# Enrichment values are only applied when the column schema doesn't already
-# have that key. More specific patterns come first.
+current_year = datetime.datetime.now().year
 
 _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
-    # ── Integer columns ──────────────────────────────────────────────────
-    # Years — always integer, recent range
-    # Matches "year", "year_of_birth", "birth_year", "graduation_year", etc.
     (re.compile(r"(?:^year(?:_|$)|_year$)", re.I),
-     {"data_type": "integer", "min": 2015, "max": 2024,
+     {"data_type": "integer",
+      "min": current_year - 10,
+      "max": current_year,
       "distribution_hint": "uniform"}),
-
     # Ages — integer, reasonable demographic range
     # Matches "age", "customer_age", "age_years", "age_at_admission", etc.
     (re.compile(r"(?:^|_)(?:age|customer_age|patient_age|age_group)(?:$|_)", re.I),
