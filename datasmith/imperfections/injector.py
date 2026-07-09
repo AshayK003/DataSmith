@@ -79,7 +79,8 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
                         mask = rng.random(n) < probs
                     else:
                         mask = rng.random(n) < null_pct
-                except Exception:
+                except (KeyError, TypeError, ValueError) as e:
+                    logger.warning("Null injection failed (%s), falling back to MCAR", e)
                     mask = rng.random(n) < null_pct
             else:
                 mask = rng.random(n) < null_pct
@@ -94,7 +95,8 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
                     scaled = z_scores / max(z_scores.max(), 1e-6) * null_pct * 3
                     probs = np.clip(np.nan_to_num(scaled, nan=0.0), 0, 1.0)
                     mask = rng.random(n) < probs
-                except Exception:
+                except (KeyError, TypeError, ValueError) as e:
+                    logger.warning("Null injection failed (%s), falling back to MCAR", e)
                     mask = rng.random(n) < null_pct
             else:
                 mask = rng.random(n) < null_pct
