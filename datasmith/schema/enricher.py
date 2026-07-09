@@ -12,6 +12,7 @@ constraint the user or LLM already set.
 """
 
 from __future__ import annotations
+import datetime
 
 import logging
 import re
@@ -29,7 +30,7 @@ _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
     # Years — always integer, recent range
     # Matches "year", "year_of_birth", "birth_year", "graduation_year", etc.
     (re.compile(r"(?:^year(?:_|$)|_year$)", re.I),
-     {"data_type": "integer", "min": 2015, "max": 2024,
+     {"data_type": "integer", "min": datetime.datetime.now().year - 10, "max": datetime.datetime.now().year,
       "distribution_hint": "uniform"}),
 
     # Ages — integer, reasonable demographic range
