@@ -119,7 +119,7 @@ COUNTRIES = [
     "Lesotho", "Eswatini", "Timor-Leste", "Solomon Islands", "Vanuatu",
     "Samoa", "Tonga", "Palau", "Micronesia", "Marshall Islands",
     "Antarctica", "Greenland", "New Caledonia", "French Polynesia", "Bermuda",
-    "Cayman Islands", "Aruba", "Monaco", "Liechtenstein", "San Marino",
+    "Cayman Islands", "Aruba", "Liechtenstein", "San Marino",
 ]
 
 CATEGORIES_ABC = ["A", "B", "C", "D", "E", "F"]
