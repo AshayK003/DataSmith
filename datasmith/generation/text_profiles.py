@@ -216,50 +216,51 @@ def _categorical_list(
 def _sentence_generator() -> Callable:
     """Return a generator that produces varied descriptive text.
 
-    Used as a catch-all for unknown text columns to avoid the
-    "Placeholder 1, Placeholder 2" look. Generates realistic-sounding
-    short sentences from random template combinations.
+    Patterns are composed dynamically for diversity on large datasets.
     """
     subjects = [
         "The system", "This process", "The request", "The application",
         "Our platform", "The service", "The operation", "This task",
         "The transaction", "The record", "The entry", "This account",
+        "The workflow", "The module", "The pipeline", "The dataset",
+        "The client", "The server", "The network", "The report",
     ]
     verbs = [
         "requires", "processes", "handles", "manages", "generates",
         "produces", "supports", "triggers", "initiates", "completes",
         "validates", "confirms", "updates", "maintains", "schedules",
+        "analyzes", "aggregates", "exports", "imports", "archives",
+        "monitors", "notifies", "escalates", "reconciles", "calculates",
     ]
     objects = [
-        "high-priority orders", "customer requests", "data records",
-        "payment transactions", "system updates", "user profiles",
-        "inventory items", "service tickets", "compliance checks",
-        "quality reviews", "batch operations", "scheduled tasks",
-        "automated workflows", "processing pipelines", "access requests",
+        "high-priority items", "incoming requests", "batch jobs",
+        "user actions", "system events", "scheduled tasks",
+        "data records", "audit logs", "configuration changes",
+        "billing entries", "customer profiles", "session tokens",
+        "queue messages", "API payloads", "file uploads",
+        "security alerts", "metric samples", "cache entries",
+        "database rows", "notification digests",
     ]
     qualifiers = [
-        "via API", "on demand", "in real-time", "per schedule",
-        "through web interface", "automatically", "manually",
-        "with approval", "in background", "via batch",
+        "efficiently", "with care", "as expected", "on schedule",
+        "without delay", "in parallel", "securely", "automatically",
+        "under load", "in production", "for compliance", "by default",
+        "when requested", "after validation", "before export",
     ]
 
-    # Pre-compose 180 unique patterns
-    _patterns = [
-        f"{s} {v} {o} {q}."
-        for s in subjects
-        for v in verbs[:5]
-        for o in objects[:3]
-        for q in qualifiers[:3]
-    ][:180]  # Keep it manageable
-
-    def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
-        picks = rng.integers(0, len(_patterns), size=n)
-        return np.array([_patterns[int(i)] for i in picks])
+    def _gen(n: int, rng, **_):
+        import numpy as np
+        picks_s = rng.integers(0, len(subjects), size=n)
+        picks_v = rng.integers(0, len(verbs), size=n)
+        picks_o = rng.integers(0, len(objects), size=n)
+        picks_q = rng.integers(0, len(qualifiers), size=n)
+        out = [
+            f"{subjects[s]} {verbs[v]} {objects[o]} {qualifiers[q]}."
+            for s, v, o, q in zip(picks_s, picks_v, picks_o, picks_q)
+        ]
+        return np.array(out, dtype=object)
 
     return _gen
-
-
-_gen_sentence = _sentence_generator()
 
 
 def _template_from_desc(desc: str) -> Callable:
