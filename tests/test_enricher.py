@@ -1,5 +1,5 @@
 """Tests for the Schema Enricher module."""
-
+import datetime
 import numpy as np
 
 from datasmith.schema.enricher import enrich_schema
@@ -11,9 +11,11 @@ class TestEnrichSchema:
         cols = [{"column_name": "year", "data_type": "numeric", "description": "Year of purchase"}]
         result = enrich_schema(cols)
         assert result[0]["data_type"] == "integer"
-        assert result[0]["min"] == 2015
-        assert result[0]["max"] == 2024
-        assert result[0]["distribution_hint"] == "uniform"
+        current_year = datetime.datetime.now().year
+
+assert result[0]["min"] == current_year - 10
+assert result[0]["max"] == current_year
+assert result[0]["distribution_hint"] == "uniform"
 
     def test_enriches_age_to_integer(self):
         """Age columns get data_type='integer' with range."""
