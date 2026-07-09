@@ -1,6 +1,6 @@
-# Internal engineering files — never committed
+# Internal files — never committed
 internals/
-.hermes/
+
 
 # Python
 __pycache__/
