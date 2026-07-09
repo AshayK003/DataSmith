@@ -91,7 +91,7 @@ _LLM_PRESETS: dict[str, dict | None] = {
         "base_url": "https://openrouter.ai/api/v1",
         "model": "qwen/qwen3-32b:free",
     },
-    "OpenCode Zen": {
+    "Free Tier (Fast)": {
         "base_url": "https://opencode.ai/zen/v1",
         "model": "deepseek-v4-flash-free",
     },
