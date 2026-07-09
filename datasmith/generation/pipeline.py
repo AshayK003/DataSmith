@@ -20,7 +20,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from datasmith.generation.engine import generate_dataset, schema_from_kg
+from datasmith.generation.engine import generate_dataset, schema_from_kg, _generic_schema
 from datasmith.generation.quality import compute_batch_quality
 from datasmith.generation.adjuster import adjust_schema, adjust_imperfection_profile
 
@@ -191,7 +191,4 @@ def batched_generate(
     return result
 
 
-def _generic_schema(domain_name: str) -> list[dict]:
-    """Fallback generic schema when KG has no data."""
-    from datasmith.generation.engine import get_generic_schema
-    return get_generic_schema(domain_name)
+
