@@ -263,6 +263,9 @@ def _sentence_generator() -> Callable:
     return _gen
 
 
+_gen_sentence = _sentence_generator()
+
+
 def _template_from_desc(desc: str) -> Callable:
     """Return a generator that creates values from a description pattern."""
     # Extract keywords from the description to build a minimal template

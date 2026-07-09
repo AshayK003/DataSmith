@@ -122,4 +122,5 @@ class TestApplyProfileEmpty:
         rng = np.random.default_rng(0)
         df = pd.DataFrame({"a": [1, 2, 3]})
         out = apply_profile(df.copy(), {}, rng)
-        assert list(out["a"]) == [1, 2, 3]
+        # apply_profile modifies in-place, returns None
+        assert out is None

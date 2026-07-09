@@ -12,10 +12,9 @@ class TestEnrichSchema:
         result = enrich_schema(cols)
         assert result[0]["data_type"] == "integer"
         current_year = datetime.datetime.now().year
-
-assert result[0]["min"] == current_year - 10
-assert result[0]["max"] == current_year
-assert result[0]["distribution_hint"] == "uniform"
+        assert result[0]["min"] == current_year - 10
+        assert result[0]["max"] == current_year
+        assert result[0]["distribution_hint"] == "uniform"
 
     def test_enriches_age_to_integer(self):
         """Age columns get data_type='integer' with range."""
