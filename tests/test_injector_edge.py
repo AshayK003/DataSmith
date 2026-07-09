@@ -90,3 +90,36 @@ class TestInjectNoiseAllNaN:
         # Should not round any values
         inject_noise(df, profile, rng)
         pd.testing.assert_series_equal(before, df["x"])
+
+
+import numpy as np
+import pandas as pd
+import pytest
+
+try:
+    from datasmith.imperfections.injector import inject_nulls, apply_profile
+except ImportError:
+    from datasmith.imperfections.injector import inject_nulls  # type: ignore
+    apply_profile = None
+
+
+class TestInjectNullsMarMissingCorrelationCol:
+    def test_inject_nulls_mar_missing_correlation_col(self):
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame({"x": [1.0] * 50})
+        profile = {
+            "null_patterns": {"x": {"null_pct": 50, "pattern": "MAR"}},
+            "null_correlations": [{"cols": ["x", "nonexistent"], "jaccard": 0.5}],
+        }
+        # Should not crash
+        inject_nulls(df, profile, rng)
+
+
+class TestApplyProfileEmpty:
+    def test_apply_profile_empty_dict_is_noop(self):
+        if apply_profile is None:
+            pytest.skip("apply_profile not exported")
+        rng = np.random.default_rng(0)
+        df = pd.DataFrame({"a": [1, 2, 3]})
+        out = apply_profile(df.copy(), {}, rng)
+        assert list(out["a"]) == [1, 2, 3]
