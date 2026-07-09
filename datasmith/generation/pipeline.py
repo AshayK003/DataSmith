@@ -189,6 +189,3 @@ def batched_generate(
             logger.info("Critique: %s", critique_summary[:200])
 
     return result
-
-
-

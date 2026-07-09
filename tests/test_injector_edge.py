@@ -2,8 +2,13 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from datasmith.imperfections.injector import inject_nulls, inject_outliers, inject_noise
+try:
+    from datasmith.imperfections.injector import apply_profile
+except ImportError:
+    apply_profile = None
 
 
 class TestInjectNullsProfileColumnMissingFromDf:
@@ -90,17 +95,6 @@ class TestInjectNoiseAllNaN:
         # Should not round any values
         inject_noise(df, profile, rng)
         pd.testing.assert_series_equal(before, df["x"])
-
-
-import numpy as np
-import pandas as pd
-import pytest
-
-try:
-    from datasmith.imperfections.injector import inject_nulls, apply_profile
-except ImportError:
-    from datasmith.imperfections.injector import inject_nulls  # type: ignore
-    apply_profile = None
 
 
 class TestInjectNullsMarMissingCorrelationCol:
