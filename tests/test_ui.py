@@ -73,3 +73,4 @@ class TestRenderHeader:
 
         assert "About" in html
         assert "ds-nav-btn active" in html
+        
