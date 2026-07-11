@@ -275,6 +275,17 @@ uv run streamlit run app.py --server.port $PORT --server.headless true
 
 ## Common Troubleshooting
 
+### Overriding Year Ranges
+
+Year-type columns default to `[current_year - 10, current_year]`. Override via the API:
+```python
+from datasmith.schema.enricher import enrich_schema
+schema = enrich_schema(raw_columns, year_start=2010, year_end=2025)
+```
+Only affects year columns — pass `year_start`/`year_end` to control the range without editing the schema manually.
+
+### Other Issues
+
 | Problem | Likely Cause | Fix |
 |---------|-------------|-----|
 | `streamlit-aggrid` import error | Missing dependency | `uv sync` (reinstalls all deps) |

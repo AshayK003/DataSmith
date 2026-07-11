@@ -108,7 +108,11 @@ _ENRICHMENT_RULES: list[tuple[re.Pattern, dict[str, Any]]] = [
 _VALID_DISTRIBUTIONS = {"uniform", "normal", "powerlaw", "lognormal", "left_skewed"}
 
 
-def enrich_schema(columns: list[dict]) -> list[dict]:
+def enrich_schema(
+    columns: list[dict],
+    year_start: int | None = None,
+    year_end: int | None = None,
+) -> list[dict]:
     """Enrich a list of column schemas with semantic constraints.
 
     Each column dict may contain: column_name, data_type, description,
@@ -119,6 +123,10 @@ def enrich_schema(columns: list[dict]) -> list[dict]:
 
     Args:
         columns: Raw column schema list from LLM discovery or user input.
+        year_start: Default start year for year-type columns when min not set.
+                    If omitted, defaults to current_year - 10.
+        year_end: Default end year for year-type columns when max not set.
+                  If omitted, defaults to current_year.
 
     Returns:
         Enriched column schema list (mutated copies, originals untouched).
@@ -168,6 +176,16 @@ def enrich_schema(columns: list[dict]) -> list[dict]:
             _fill_range(col, name)
 
         enriched.append(col)
+
+    # Override year column ranges if user-provided year_start/year_end
+    if year_start is not None or year_end is not None:
+        year_pat = re.compile(r"(?:^year(?:_|$)|_year$)", re.I)
+        for col in enriched:
+            if year_pat.search(col.get("column_name", "")):
+                if year_start is not None and "min" not in col:
+                    col["min"] = year_start
+                if year_end is not None and "max" not in col:
+                    col["max"] = year_end
 
     return enriched
 
