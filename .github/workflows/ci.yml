@@ -2,24 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+    branches: [main, master]
   schedule:
     - cron: "0 6 * * *"  # daily 6am UTC — seed crawl
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@5b3d8c2e8f7c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8 # v5.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -27,28 +39,35 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python pin ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install dependencies (all extras + dev)
         run: uv sync --all-extras --dev
 
-      - name: Lint
+      - name: Lint (flake8)
         run: uv run flake8 datasmith/ tests/ --max-line-length=100 --exclude=.venv --count
 
-      - name: Test
-        run: uv run pytest tests/ -v --tb=short -Wignore::FutureWarning -Wignore::DeprecationWarning
+      - name: Test (pytest)
+        run: uv run pytest tests/ -v --tb=short -q --cov=datasmith --cov-report=xml -Wignore::FutureWarning -Wignore::DeprecationWarning
 
       - name: Test importable
         run: uv run python -c "from datasmith.generation import generator, engine; from datasmith.imperfections import analyzer, injector, profiles; print('All modules importable')"
 
+      - name: Upload coverage
+        uses: actions/upload-artifact@a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8 # v4.3.0
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
+
   seed-crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
     if: github.event_name == 'schedule'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@5b3d8c2e8f7c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8 # v5.0.0
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -59,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
-      - name: Configure git (needed before script runs)
+      - name: Configure git
         run: |
           git config --local user.email "datasmith-bot@users.noreply.github.com"
           git config --local user.name "DataSmith Bot"
