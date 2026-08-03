@@ -26,12 +26,12 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@5b3d8c2e8f7c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8 # v5.0.0
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -52,7 +52,7 @@ jobs:
         run: uv run python -c "from datasmith.generation import generator, engine; from datasmith.imperfections import analyzer, injector, profiles; print('All modules importable')"
 
       - name: Upload coverage
-        uses: actions/upload-artifact@a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8 # v4.3.0
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
@@ -64,10 +64,10 @@ jobs:
       contents: write
     if: github.event_name == 'schedule'
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@5b3d8c2e8f7c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8 # v5.0.0
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
