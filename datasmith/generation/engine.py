@@ -86,8 +86,19 @@ def generate_dataset(kg: KnowledgeGraph,
                      user_prompt: str = "",
                      llm_config: Optional[dict] = None,
                      ) -> pd.DataFrame:
-    """Full generation pipeline: schema → generate → correlate → inject
-    → critique → validate → return.
+    """Full generation pipeline following Medallion Architecture.
+
+    Pipeline stages (Medallion mapping):
+        Bronze (raw):    schema_from_kg → enrich_schema → generate_from_schema
+                         Raw synthetic records, exactly as generated. Immutable.
+        Silver (clean):  apply_correlations → apply_profile → critique_dataset
+                         Deduplicated, correlated, imperfections injected, LLM-checked.
+        Gold (ready):    validate → return
+                         Business-ready DataFrame, validated against schema.
+
+    Each layer has one job. Failures isolate to one layer. If Bronze
+    generation fails, Silver/Gold are never reached. If Silver critique
+    flags issues, Gold validation catches remaining problems.
 
     Args:
         kg: KnowledgeGraph instance.
