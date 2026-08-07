@@ -293,6 +293,91 @@ def _parse_critique_response(content: str) -> Optional[CritiqueResult]:
     return None
 
 
+_MAX_NULLIFY_FRACTION = 0.30
+
+
+def _validate_fixes(
+    fixes: list[CritiqueFix],
+    df: pd.DataFrame,
+) -> tuple[list[CritiqueFix], list[dict]]:
+    """Deterministic revalidation of LLM critique fixes before applying them.
+
+    Cheap (zero LLM) pass that rejects destructive or hallucinated fixes:
+    - clamp: skip inverted ranges (min > max), missing columns, and columns
+      that would be destroyed by numeric coercion (>= threshold nullified).
+    - retype: skip missing columns and coercions that would nullify more
+      than _MAX_NULLIFY_FRACTION of the column's values.
+    - drop/rename: passed through unchanged — they are validated later in
+      the apply loop against the schema (unknown-column drops ignored).
+
+    Returns:
+        (valid_fixes, skipped) — skipped is a list of
+        {"column", "action", "reason"} dicts for logging.
+    """
+
+    def _nullify_fraction(column: str) -> float:
+        if column not in df.columns or len(df[column]) == 0:
+            return 0.0
+        coerced = pd.to_numeric(df[column], errors="coerce")
+        nullified = coerced.isna().sum()
+        return float(nullified / len(df[column]))
+
+    valid: list[CritiqueFix] = []
+    skipped: list[dict] = []
+
+    for fix in fixes:
+        if fix.action in ("drop", "rename"):
+            valid.append(fix)
+            continue
+
+        if fix.action == "clamp":
+            if fix.column not in df.columns:
+                skipped.append({
+                    "column": fix.column, "action": fix.action,
+                    "reason": "column does not exist",
+                })
+                continue
+            if (
+                fix.clamp_min is not None
+                and fix.clamp_max is not None
+                and fix.clamp_min > fix.clamp_max
+            ):
+                skipped.append({
+                    "column": fix.column, "action": fix.action,
+                    "reason": f"inverted clamp range [{fix.clamp_min}, {fix.clamp_max}]",
+                })
+                continue
+            if _nullify_fraction(fix.column) >= _MAX_NULLIFY_FRACTION:
+                skipped.append({
+                    "column": fix.column, "action": fix.action,
+                    "reason": "column is not numeric (coercion would nullify it)",
+                })
+                continue
+            valid.append(fix)
+            continue
+
+        if fix.action == "retype":
+            if fix.column not in df.columns:
+                skipped.append({
+                    "column": fix.column, "action": fix.action,
+                    "reason": "column does not exist",
+                })
+                continue
+            if _nullify_fraction(fix.column) >= _MAX_NULLIFY_FRACTION:
+                skipped.append({
+                    "column": fix.column, "action": fix.action,
+                    "reason": "coercion would nullify >30% of values",
+                })
+                continue
+            valid.append(fix)
+            continue
+
+        # Unknown action — keep for the apply loop's pattern check
+        valid.append(fix)
+
+    return valid, skipped
+
+
 def _build_sample_prompt(
     user_prompt: str,
     schema: list[dict],
@@ -389,13 +474,22 @@ def critique_dataset(
         len(result.fixes),
     )
 
+    # Revalidate fixes before applying (cheap, zero LLM) — skips destructive
+    # or hallucinated fixes (inverted clamps, coercions that destroy data)
+    valid_fixes, skipped_fixes = _validate_fixes(result.fixes, df)
+    for skipped in skipped_fixes:
+        logger.warning(
+            "Skipped critique fix on '%s' (%s): %s",
+            skipped["column"], skipped["action"], skipped["reason"],
+        )
+
     # Apply fixes
     cleaned = df.copy()
 
     # Step 1: Drop extra columns not in the original prompt
     schema_names = set(c["column_name"] for c in schema)
     all_drops = set(result.columns_to_drop)
-    for fix in result.fixes:
+    for fix in valid_fixes:
         if fix.action == "drop":
             all_drops.add(fix.column)
 
@@ -411,7 +505,7 @@ def critique_dataset(
             cleaned = cleaned.drop(columns=[col_name])
 
     # Step 2: Apply retype fixes
-    for fix in result.fixes:
+    for fix in valid_fixes:
         if fix.action == "retype" and fix.column in cleaned.columns and fix.new_type:
             logger.info("Retyping column '%s' to '%s'", fix.column, fix.new_type)
             if fix.new_type == "integer":
@@ -426,14 +520,14 @@ def critique_dataset(
                 cleaned[fix.column] = cleaned[fix.column].astype(str)
 
     # Step 3: Apply rename fixes
-    for fix in result.fixes:
+    for fix in valid_fixes:
         if fix.action == "rename" and fix.column in cleaned.columns and fix.new_name:
             if fix.new_name not in cleaned.columns:
                 logger.info("Renaming column '%s' to '%s'", fix.column, fix.new_name)
                 cleaned = cleaned.rename(columns={fix.column: fix.new_name})
 
     # Step 4: Apply clamp fixes
-    for fix in result.fixes:
+    for fix in valid_fixes:
         if fix.action == "clamp" and fix.column in cleaned.columns:
             if fix.clamp_min is not None or fix.clamp_max is not None:
                 logger.info(

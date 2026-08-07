@@ -95,9 +95,13 @@ def batched_generate(
         )
         if verification and not verification.relevant:
             logger.warning(
-                "Schema relevance: %d issues — %s",
+                "Schema relevance: %d issues — %s (missing=%s, extra=%s, "
+                "type_suggestions=%s)",
                 verification.issues_found,
-                verification.summary[:150],
+                verification.summary,
+                verification.missing_columns,
+                verification.extra_columns,
+                verification.type_suggestions,
             )
 
     # Step 2: Resolve imperfection profile once

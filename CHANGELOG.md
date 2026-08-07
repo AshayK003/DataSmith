@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.13.0 (2026-08-07)
+
+### Added
+
+- **Critique fix revalidation (revalidate stage)** — LLM critique fixes are now validated by a deterministic, zero-LLM pass before being applied (`_validate_fixes` in `datasmith/llm/critique.py`). Skipped fixes (inverted clamp ranges, coercions that would nullify >30% of a column's values, missing columns) are logged with reasons instead of being applied destructively. Fixes `drop`/`rename` are unchanged — they keep their existing schema-based validation in the apply loop.
+- **Full schema-verification diagnostics in logs** — when schema verification finds issues, the log now includes the complete missing/extra/type-suggestion lists instead of a truncated summary, so a failed verification is actionable without re-running.
+
+### Changed
+
+- **LLM critique apply loop uses validated fixes only** — `critique_dataset()` applies the validated subset returned by `_validate_fixes`, so hallucinated or destructive fixes no longer mutate the cleaned dataset.
+
 ## v0.12.0 (2026-06-29)
 
 ### Added
