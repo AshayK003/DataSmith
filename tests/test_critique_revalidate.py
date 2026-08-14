@@ -6,7 +6,6 @@ applied, so hallucinated or destructive fixes are skipped instead of applied.
 """
 
 import pandas as pd
-import pytest
 
 from datasmith.llm.critique import (
     CritiqueFix,
