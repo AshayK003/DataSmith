@@ -1,6 +1,6 @@
 [project]
 name = "datasmith"
-version = "0.13.0"
+version = "0.14.0"
 description = "Free open-source synthetic dataset generator with domain-specific imperfections"
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
@@ -27,19 +27,12 @@ include = ["datasmith*"]
 
 [project.optional-dependencies]
 gen = ["sdv>=1.15"]
-dev = ["pytest>=8", "pytest-cov>=5", "pytest-mock>=3", "flake8>=7"]
+dev = ["pytest>=9.1.1", "pytest-cov>=7.1.0", "pytest-mock>=3.15.1", "flake8>=7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
-
-[dependency-groups]
-dev = [
-    "pytest>=9.1.1",
-    "pytest-cov>=7.1.0",
-    "pytest-mock>=3.15.1",
-]
 
 [tool.flake8]
 max-line-length = 100

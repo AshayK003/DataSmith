@@ -17,6 +17,7 @@ from typing import Optional
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends
 from fastapi.responses import PlainTextResponse
 
 from datasmith.core.database import Database
@@ -154,15 +155,20 @@ async def root():
     }
 
 
+
+def require_kg() -> Database:
+    """Dependency: return the initialized knowledge graph or 503."""
+    if not _kg:
+        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
+    return _kg
+
+
 @app.get("/domains", tags=["Schema"])
-async def list_domains(request: Request, q: str = ""):
+async def list_domains(request: Request, kg: Database = Depends(require_kg), q: str = ""):
     """List available domains in the knowledge graph.
 
     Pass ?q= to search by name or description.
     """
-    kg = _kg
-    if not kg:
-        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
     if q:
         domains = kg.search_domains(q)
     else:
@@ -174,15 +180,12 @@ async def list_domains(request: Request, q: str = ""):
 
 
 @app.get("/schemas/{domain_name}", tags=["Schema"])
-async def get_domain_schema(domain_name: str, request: Request):
+async def get_domain_schema(domain_name: str, request: Request, kg: Database = Depends(require_kg)):
     """Get the column schema for a domain.
 
     Returns the enriched schema used by the generator, or a generic fallback
     if the domain has no KG data.
     """
-    kg = _kg
-    if not kg:
-        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
     schema = schema_from_kg(kg, domain_name)
     if not schema:
         schema = get_generic_schema(domain_name)
@@ -193,14 +196,11 @@ async def get_domain_schema(domain_name: str, request: Request):
 
 
 @app.post("/discover", tags=["Generation"])
-async def discover_from_prompt(discover_req: DiscoverRequest, request: Request):
+async def discover_from_prompt(discover_req: DiscoverRequest, request: Request, kg: Database = Depends(require_kg)):
     """Natural language → schema discovery.
 
     Takes a plain-English description and returns a column schema.
     """
-    kg = _kg
-    if not kg:
-        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
 
     schema = discover_schema(kg, discover_req.prompt)
     if not schema:
@@ -214,15 +214,12 @@ async def discover_from_prompt(discover_req: DiscoverRequest, request: Request):
 
 
 @app.post("/generate", tags=["Generation"])
-async def generate(gen_req: GenerateRequest, request: Request):
+async def generate(gen_req: GenerateRequest, request: Request, kg: Database = Depends(require_kg)):
     """Generate a synthetic dataset.
 
     Returns CSV text in the response body. Use ``Accept: application/json``
     to receive a JSON object instead.
     """
-    kg = _kg
-    if not kg:
-        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
 
     # Build LLM config if API key provided
     llm_config = None
@@ -269,16 +266,13 @@ async def generate(gen_req: GenerateRequest, request: Request):
 
 
 @app.post("/generate/batch", tags=["Generation"])
-async def generate_batch(gen_req: GenerateRequest, request: Request):
+async def generate_batch(gen_req: GenerateRequest, request: Request, kg: Database = Depends(require_kg)):
     """Generate a larger dataset using batched iterative generation.
 
     Same parameters as /generate but uses the batched pipeline for
     larger datasets with quality feedback between batches.
     Returns CSV text.
     """
-    kg = _kg
-    if not kg:
-        raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
 
     batch_size = min(gen_req.n_rows, 1000)
 

@@ -266,22 +266,6 @@ def _sentence_generator() -> Callable:
 _gen_sentence = _sentence_generator()
 
 
-def _template_from_desc(desc: str) -> Callable:
-    """Return a generator that creates values from a description pattern."""
-    # Extract keywords from the description to build a minimal template
-    words = re.findall(r"[\w']+", desc.lower())
-    content_words = [w for w in words if len(w) > 3 and w not in
-                     {"that", "this", "with", "from", "where", "which",
-                      "their", "about", "would", "could", "should", "what",
-                      "when", "for", "the", "and", "are", "was", "has", "had"}]
-    if content_words:
-        base = content_words[0].title()
-
-        def _gen(n: int, rng: np.random.Generator, **_) -> np.ndarray:
-            suffixes = rng.integers(1, 10000, size=n)
-            return np.array([f"{base}_{s}" for s in suffixes])
-        return _gen
-    return _categorical_list(["Sample A", "Sample B", "Sample C"])
 
 
 # ── Pattern matcher ─────────────────────────────────────────────────────────

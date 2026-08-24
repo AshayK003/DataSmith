@@ -220,13 +220,3 @@ def _fill_range(col: dict, name: str) -> None:
         col["max"] = col["min"] + 100
 
 
-def _build_semantic_map() -> dict[str, str]:
-    """Build a column-name → semantic-type map for quick lookup.
-    Useful for debugging and reporting.
-    """
-    mapping: dict[str, str] = {}
-    for pattern, enrichment in _ENRICHMENT_RULES:
-        semantic = enrichment.get("data_type", "text")
-        # Use the human-readable part of the pattern
-        mapping[pattern.pattern] = semantic
-    return mapping
