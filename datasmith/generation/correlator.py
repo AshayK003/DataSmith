@@ -163,8 +163,12 @@ def _reorder_by_rank(df: pd.DataFrame, col_name: str,
             z_subset = normal_vector[non_null_indices]
             ranks = np.argsort(z_subset)
 
-            # Sort the non-null values
-            sorted_vals = np.sort(col_data[non_null_indices])
+            # Sort the non-null values (mixed types can't sort — skip pair)
+            try:
+                sorted_vals = np.sort(col_data[non_null_indices])
+            except TypeError:
+                logger.debug("Skipping correlation for '%s': mixed-type values", col_name)
+                return
 
             # Place sorted values at rank positions
             result = col_data.copy()

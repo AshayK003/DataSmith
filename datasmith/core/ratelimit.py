@@ -6,12 +6,15 @@ Usage:
     limiter = RateLimiter(max_requests=10, window_seconds=60)
     allowed, remaining = limiter.check("session-abc")
     if not allowed:
-        print("rate limited")
+        logger.debug("rate limited")
 """
 
+import logging
 import time
 import threading
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -21,9 +24,11 @@ class RateLimiter:
     outside the window are pruned on each check. Thread-safe via RLock.
     """
 
-    def __init__(self, max_requests: int = 10, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 10, window_seconds: int = 60,
+                 max_keys: int = 10_000):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
+        self.max_keys = max_keys
         self._windows: dict[str, list[float]] = defaultdict(list)
         self._lock = threading.RLock()
 
@@ -37,6 +42,7 @@ class RateLimiter:
         now = time.time()
         cutoff = now - self.window_seconds
         with self._lock:
+            self._evict_expired(now, cutoff)
             window = self._windows.get(key)
             if window is None:
                 # Fresh key
@@ -65,6 +71,16 @@ class RateLimiter:
                 return self.max_requests
             fresh = [t for t in window if t > cutoff]
             return max(0, self.max_requests - len(fresh))
+
+    def _evict_expired(self, now: float, cutoff: float) -> None:
+        """Drop fully-expired keys; cap total keys to bound memory."""
+        expired = [k for k, ts in self._windows.items()
+                   if not ts or max(ts) <= cutoff]
+        for k in expired:
+            del self._windows[k]
+        # Leave room for the key about to be inserted.
+        while len(self._windows) >= self.max_keys:
+            self._windows.pop(next(iter(self._windows)))
 
     def reset(self, key: str) -> None:
         """Clear rate limit state for *key*."""

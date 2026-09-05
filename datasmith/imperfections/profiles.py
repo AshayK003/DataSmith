@@ -231,8 +231,9 @@ def merge_profile(existing: dict, analysis: dict) -> dict:
     """
     merged = dict(existing)
 
-    # Merge null_patterns from analysis
-    if "null_patterns" in analysis and "null_correlations" in analysis:
+    # Merge null_patterns from analysis (real analyzer output uses
+    # "missingness"; accept either key so real data is never dropped)
+    if "null_patterns" in analysis or "null_correlations" in analysis or "missingness" in analysis:
         merged.setdefault("null_patterns", {}).update(analysis.get("null_patterns", {}))
         merged.setdefault("null_correlations", analysis.get("null_correlations", []))
 

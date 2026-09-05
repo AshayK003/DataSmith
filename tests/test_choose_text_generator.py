@@ -1,7 +1,6 @@
 """Tests for text-generator selection (issue #24)."""
 
 import numpy as np
-import pytest
 
 from datasmith.generation.text_profiles import choose_text_generator
 

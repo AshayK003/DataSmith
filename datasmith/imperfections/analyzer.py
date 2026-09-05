@@ -240,7 +240,7 @@ def classify_missingness(df, min_correlated: float = 0.3) -> dict[str, Any]:
             except Exception:
                 pass
 
-        if len(corr_with) >= 2 and mnar_hint:
+        if mnar_hint:
             pattern = "MNAR"
         elif len(corr_with) >= 1:
             pattern = "MAR"

@@ -53,19 +53,20 @@ def adjust_schema(schema: list[dict],
         ks_key = f"ks_{name}"
         if ks_key in quality and quality[ks_key] > ks_threshold:
             current_mean = float(entry.get("mean", 50.0) or 50.0)
-            # The KS stat signals the batch mean is off from target.
-            # We don't know the actual batch mean here (it's not in quality),
-            # so we apply a small conservative pull toward the reference mean.
-            # Since the KG mean is already the target, this is a tiny nudge
-            # to counter persistent bias.
-            correction = current_mean * lr * quality[ks_key]
-            new_mean = current_mean - correction
-            entry["mean"] = round(new_mean, 4)
-            adjustments += 1
-            logger.debug(
-                "Adjusted '%s'.mean: %.2f → %.2f (KS=%.3f)",
-                name, current_mean, new_mean, quality[ks_key],
-            )
+            batch_mean = quality.get(f"mean_{name}")
+            if batch_mean is None:
+                logger.debug("Skipping KS adjustment for '%s': no batch mean", name)
+            else:
+                # Signed error: batch overshoot pulls the next mean down,
+                # undershoot pulls it up. Never a one-way ratchet.
+                error = float(batch_mean) - current_mean
+                new_mean = current_mean - lr * error
+                entry["mean"] = round(new_mean, 4)
+                adjustments += 1
+                logger.debug(
+                    "Adjusted '%s'.mean: %.2f → %.2f (KS=%.3f, err=%+.3f)",
+                    name, current_mean, new_mean, quality[ks_key], error,
+                )
 
         # ── Null-rate correction ──
         drift_key = f"null_drift_{name}"
@@ -73,12 +74,10 @@ def adjust_schema(schema: list[dict],
         if drift_key in quality and quality[drift_key] > null_threshold:
             # Adjust the column's null_ratio in the schema
             current_null = target_null
-            error = quality[drift_key]
-            # If actual nulls were too high, reduce target null rate
-            # Since we don't know the direction of drift from the scalar abs,
-            # we use a conservative reduction proportional to drift
+            # Signed drift: too many nulls → reduce target, too few → raise it.
+            signed = quality.get(f"null_signed_{name}", quality[drift_key])
             if target_null > 0:
-                new_null = max(0.0, target_null - error * lr * 10)
+                new_null = max(0.0, target_null - signed * lr * 10)
                 entry["null_ratio"] = round(new_null, 4)
                 adjustments += 1
                 logger.debug(
@@ -130,7 +129,7 @@ def adjust_imperfection_profile(profile: dict | None,
         if current_pct <= 0:
             continue
 
-        error = quality[drift_key]
+        error = quality.get(f"null_signed_{name}", quality[drift_key])
         new_pct = max(0.0, current_pct - error * lr * 50)
         null_patterns[name]["null_pct"] = round(new_pct, 2)
         logger.debug(

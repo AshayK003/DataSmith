@@ -111,6 +111,10 @@ def batched_generate(
         profile = load_profile_from_kg(kg, domain_name)
 
     # Step 3: Batch loop
+    if total_rows < 1:
+        raise ValueError("total_rows must be >= 1")
+    if batch_size < 1:
+        raise ValueError("batch_size must be >= 1")
     n_batches = math.ceil(total_rows / batch_size)
     all_batches: list[pd.DataFrame] = []
     total_retries = 0
@@ -136,6 +140,7 @@ def batched_generate(
                     custom_schema=current_schema,
                     inject_imperfections=inject_imperfections,
                     seed=batch_seed + attempt,
+                    profile=current_profile,
                 )
             except Exception as exc:
                 logger.warning("Batch %d attempt %d failed: %s", i, attempt, exc)

@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.14.1 (2026-09-05)
+
+### Fixed
+
+- **Batched quality feedback now reaches the generator** — `batched_generate()` passes its adjusted imperfection profile into `generate_dataset()` via a new `profile` parameter instead of recomputing-but-discarding it every batch.
+- **Real null-rate data merges again** — `merge_profile()` accepts analyzer output keyed by `missingness`, not just `null_patterns`.
+- **`GET /domains?q=` no longer crashes** — added the missing `KnowledgeGraph.search_domains()` (parameterized LIKE over name/description).
+- **`POST /generate` without a seed no longer fails on retry** — `seed=None` normalizes to 42 up front.
+- **Rate limiting enforced** — wired into all five data routes, keyed on client IP (unvalidated `X-API-Key` headers are no longer trusted for quota), key store capped and expired.
+- **SSRF guard on LLM endpoints** — user-supplied `llm_base_url` must be https (loopback excepted) and cannot target private/internal IPs.
+- **Distribution fixes** — max-only bounds now clip; power-law/lognormal single-shift so means track their targets; KS and null-drift adjustments use signed errors (no one-way ratchet); degenerate-IQR fallback; mixed-type text columns skip correlation instead of crashing; string profile percentages coerced.
+- **Validator ID checks** — strict PREFIX-NUMBERS pattern applies only when the schema declares a format; otherwise IDs need uniqueness. Pure-MNAR columns labeled MNAR.
+- **API hardening** — explicit CORS allowlist (`DATASMITH_CORS_ORIGINS`), length caps on free-text fields, single-source version (`datasmith.__version__`), DB connection closed on shutdown.
+- **Hygiene** — removed dead test imports, library `print()` → logging.
+
+### Tests
+
+- 16 new regression tests (`tests/test_audit_fixes.py`), full suite 247 passed. Live end-to-end proof in `scripts/verify_audit_fixes.py` (7/7 checks against the real app + seed DB).
+
 ## v0.13.0 (2026-08-07)
 
 ### Added

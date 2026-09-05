@@ -41,7 +41,10 @@ def inject_nulls(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         if pd.api.types.is_bool_dtype(df[col].dtype):
             continue
 
-        null_pct = pattern.get("null_pct", 0) / 100.0
+        try:
+            null_pct = float(pattern.get("null_pct", 0)) / 100.0
+        except (TypeError, ValueError):
+            continue
         if null_pct <= 0:
             continue
 
@@ -123,7 +126,10 @@ def inject_outliers(df, profile: dict, rng: Optional[np.random.Generator] = None
         if col not in df.columns:
             continue
 
-        outlier_pct = pattern.get("outlier_pct", 0) / 100.0
+        try:
+            outlier_pct = float(pattern.get("outlier_pct", 0)) / 100.0
+        except (TypeError, ValueError):
+            continue
         if outlier_pct <= 0:
             continue
 
@@ -144,7 +150,9 @@ def inject_outliers(df, profile: dict, rng: Optional[np.random.Generator] = None
 
         q1, q3 = np.percentile(series, [25, 75])
         iqr = q3 - q1
-        base_iqr = max(iqr, abs(q3 - q1) * 0.1)  # Guard against degenerate
+        # Guard against degenerate (constant) columns: fall back to a
+        # scale-relative epsilon so injected outliers actually separate.
+        base_iqr = iqr if iqr > 0 else max(abs(float(q3)) * 0.01, 1e-6)
 
         for idx in outlier_indices:
             if direction == "high" or (direction == "both" and rng.random() > 0.5):
@@ -174,7 +182,10 @@ def inject_noise(df, profile: dict, rng: Optional[np.random.Generator] = None) -
         if col not in df.columns:
             continue
 
-        rounding_pct = pattern.get("rounding_pct", 0)
+        try:
+            rounding_pct = float(pattern.get("rounding_pct", 0))
+        except (TypeError, ValueError):
+            continue
         precision = pattern.get("precision", 0.01)
 
         if rounding_pct <= 0:

@@ -1,8 +1,5 @@
 """Tests for the LLM critique response parser (issue #23)."""
 
-import pytest
-from pydantic import ValidationError
-
 from datasmith.llm.critique import _parse_critique_response
 
 

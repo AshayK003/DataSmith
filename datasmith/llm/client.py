@@ -4,14 +4,47 @@ Raw requests, no SDKs. Works with any OpenAI-compatible endpoint.
 Supports Groq, OpenRouter, and Gemini out of the box.
 """
 
+import ipaddress
 import json
 import logging
 import os
 from typing import Optional
+from urllib.parse import urlparse
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+
+def is_safe_base_url(url: str) -> bool:
+    """Reject SSRF-unsafe LLM base URLs (non-HTTP schemes, private IPs).
+
+    Public hostnames must use https (no cleartext API keys on the wire).
+    IP literals pointing at private, link-local, reserved, or multicast
+    ranges are rejected. Plain http is allowed only for loopback/localhost
+    (local dev servers).
+    """
+    try:
+        parts = urlparse(url)
+    except ValueError:
+        return False
+    if parts.scheme not in ("http", "https"):
+        return False
+    host = (parts.hostname or "").lower()
+    if not host:
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        if host == "localhost":
+            return True  # local dev server
+        return parts.scheme == "https"  # no cleartext API keys on the wire
+    if ip.is_loopback:
+        return True  # http allowed for local dev; https loopback fine too
+    if parts.scheme != "https":
+        return False
+    return not (ip.is_private or ip.is_link_local or ip.is_reserved or ip.is_multicast)
+
 
 # Provider presets
 _PROVIDERS: dict[str, dict] = {
@@ -115,6 +148,9 @@ def chat_complete(
     )
     if not effective_key:
         logger.warning("No LLM API key configured")
+        return None
+    if not is_safe_base_url(effective_base):
+        logger.warning("Refusing unsafe LLM base URL: %s", effective_base)
         return None
 
     logger.debug("LLM call: provider=%s model=%s", provider, model)

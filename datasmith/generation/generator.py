@@ -46,8 +46,12 @@ def _sample_normal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray:
     mean = _coerce_stat(stat.get("mean"), mid)
     std = max(_coerce_stat(stat.get("std"), abs(mid) * 0.1 + 1.0), 0.01)
     data = rng.normal(mean, std, n)
-    if lo is not None:
-        data = np.clip(data, lo, hi)
+    if lo is not None or hi is not None:
+        data = np.clip(
+            data,
+            lo if lo is not None else -np.inf,
+            hi if hi is not None else np.inf,
+        )
     return data
 
 
@@ -67,7 +71,7 @@ def _sample_powerlaw(n: int, stat: dict, rng: np.random.Generator) -> np.ndarray
     std = max(_coerce_stat(stat.get("std"), abs(hi - lo) * 0.2), 0.01)
     # alpha > 2 makes finite variance
     alpha = max((mean / std) ** 2, 1.5)
-    data = rng.pareto(alpha, n) + abs(lo) + 1.0
+    data = rng.pareto(alpha, n) + 1.0
     scale = max(mean / np.mean(data) if np.mean(data) > 0 else 1.0, 0.1)
     data = data * scale + lo
     hi = _coerce_stat(stat.get("max"))
@@ -88,10 +92,12 @@ def _sample_lognormal(n: int, stat: dict, rng: np.random.Generator) -> np.ndarra
     hi = _coerce_stat(stat.get("max"))
     scale = mean / np.mean(data) if np.mean(data) > 0 else 1.0
     data = data * scale
-    if lo is not None:
-        data = data + lo
-    if hi is not None:
-        data = np.clip(data, lo, hi)
+    if lo is not None or hi is not None:
+        data = np.clip(
+            data,
+            lo if lo is not None else -np.inf,
+            hi if hi is not None else np.inf,
+        )
     return data
 
 

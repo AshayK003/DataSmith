@@ -113,15 +113,26 @@ class TestAdjuster:
             assert orig["column_name"] == adj["column_name"]
 
     def test_adjust_schema_modifies_mean(self):
-        """High KS triggers mean adjustment."""
+        """High KS triggers signed mean adjustment (batch overshoot → pull down)."""
+        metrics = {"ks_price": 0.25, "mean_price": 60.0, "null_drift_price": 0.0,
+                   "quality_score": 0.5}
+        schema = [dict(col) for col in SIMPLE_SCHEMA]
+        result = adjuster.adjust_schema(schema, metrics)
+        # price column should have adjusted mean: 50 - 0.1*(60-50) = 49.0
+        for col in result:
+            if col["column_name"] == "price":
+                assert col["mean"] == 49.0
+                break
+
+    def test_adjust_schema_skips_without_batch_mean(self):
+        """No batch mean in quality → no blind adjustment (no ratchet)."""
         metrics = {"ks_price": 0.25, "null_drift_price": 0.0,
                    "quality_score": 0.5}
         schema = [dict(col) for col in SIMPLE_SCHEMA]
         result = adjuster.adjust_schema(schema, metrics)
-        # price column should have adjusted mean
         for col in result:
             if col["column_name"] == "price":
-                assert col["mean"] != 50.0  # was adjusted
+                assert col["mean"] == 50.0
                 break
 
     def test_adjust_schema_does_not_mutate_original(self):

@@ -342,12 +342,13 @@ curl -s http://localhost:8000/domains | python -m json.tool
 
 ### Rate Limiting
 
-Both the Streamlit UI and REST API share a per-session/IP rate limiter (default: **10 requests per minute**). Configurable via environment variables:
+Both the Streamlit UI and REST API share a per-session/IP rate limiter (default: **10 requests per minute**). The API enforces it on every data route (`/domains`, `/schemas/*`, `/discover`, `/generate`, `/generate/batch`), keyed on client IP. Configurable via environment variables:
 
 | Env Var | Default | Description |
 |---------|---------|-------------|
 | `DATASMITH_RATE_MAX` | `10` | Max requests per window |
 | `DATASMITH_RATE_WINDOW` | `60` | Window in seconds |
+| `DATASMITH_CORS_ORIGINS` | _(empty)_ | Comma-separated browser origins allowed to call the API |
 
 Rate limit headers are returned on every API response:
 - `X-RateLimit-Limit` — max requests per window
@@ -358,8 +359,10 @@ Rate limit headers are returned on every API response:
 
 ## Security Notes
 
-- **Rate limited** — 10 requests/minute per session/IP to prevent abuse. Configure via `DATASMITH_RATE_MAX` and `DATASMITH_RATE_WINDOW`.
+- **Rate limited** — 10 requests/minute per client IP on all data routes to prevent abuse. Configure via `DATASMITH_RATE_MAX` and `DATASMITH_RATE_WINDOW`.
 - **No authentication** (optional) — the API has no built-in auth. Add middleware or an API gateway for production use.
+- **LLM endpoint guard** — user-supplied `llm_base_url` values must be https (except loopback) and cannot point at private/internal IPs.
+- **Request limits** — `domain` (200 chars) and prompt fields (2000 chars) are length-capped; `/generate` accepts at most 100,000 rows per request.
 - **LLM keys** — API keys live in environment variables, never in code or session state
 - **CSV output** — sanitized against formula injection (cells starting with `=`, `+`, `-`, `@` are prefixed with `'`)
 - **AG Grid** — JavaScript execution disabled (`allow_unsafe_jscode=False`)

@@ -85,6 +85,7 @@ def generate_dataset(kg: KnowledgeGraph,
                      seed: Optional[int] = 42,
                      user_prompt: str = "",
                      llm_config: Optional[dict] = None,
+                     profile: Optional[dict] = None,
                      ) -> pd.DataFrame:
     """Full generation pipeline following Medallion Architecture.
 
@@ -109,7 +110,9 @@ def generate_dataset(kg: KnowledgeGraph,
         correlations: Optional list of pairwise correlation specs.
             Each dict has ``col_a``, ``col_b``, ``rho``.
             Example: ``[{"col_a": "price", "col_b": "quantity", "rho": 0.85}]``
-        seed: Random seed for reproducibility.
+        seed: Random seed for reproducibility (None → 42).
+        profile: Optional pre-resolved imperfection profile. When None and
+            inject_imperfections is True, the profile is loaded from the KG.
         user_prompt: Original NL description from the user. When provided
             and an LLM is available, the generated dataset is critiqued
             against the prompt — extra columns are dropped, type mismatches
@@ -124,6 +127,8 @@ def generate_dataset(kg: KnowledgeGraph,
     (up to MAX_VALIDATION_RETRIES times).
     """
     llm_cfg = llm_config or {}
+    if seed is None:
+        seed = 42
     try:
         # Step 1: Get schema — None means KG lookup, explicit [] means empty
         schema = schema_from_kg(kg, domain_name) if custom_schema is None else custom_schema
@@ -151,10 +156,14 @@ def generate_dataset(kg: KnowledgeGraph,
                 df = apply_correlations(df, correlations, rng)
 
             # Step 3: Inject imperfections
+            active_profile = None
             if inject_imperfections:
-                profile = load_profile_from_kg(kg, domain_name)
-                if profile:
-                    apply_profile(df, profile, rng)
+                if profile is not None:
+                    active_profile = profile
+                else:
+                    active_profile = load_profile_from_kg(kg, domain_name)
+            if active_profile:
+                apply_profile(df, active_profile, rng)
 
             # Step 3.5: LLM critique (only on final attempt or first pass)
             if user_prompt and attempt == 0:

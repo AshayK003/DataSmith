@@ -18,8 +18,10 @@ from typing import Optional
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi import Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
+from datasmith import __version__
 from datasmith.core.database import Database
 from datasmith.core.ratelimit import RateLimiter
 from datasmith.generation.engine import generate_dataset, schema_from_kg, get_generic_schema
@@ -48,21 +50,45 @@ async def lifespan(app: FastAPI):
     global _kg
     _kg = _init_kg()
     yield
+    if _kg is not None:
+        _kg.db.close()
     _kg = None
 
 
 app = FastAPI(
     title="DataSmith API",
-    version="0.11.0",
+    version=__version__,
     description="Generate realistic synthetic datasets programmatically.",
     lifespan=lifespan,
 )
 
+# Explicit CORS allowlist (empty = same-origin only). Set DATASMITH_CORS_ORIGINS
+# to a comma-separated list to allow browser clients from those origins.
+_cors_env = os.environ.get("DATASMITH_CORS_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
+
 # ── Rate limiting dependency ────────────────────────────────────────────
 
 # Configurable via env vars: DATASMITH_RATE_MAX, DATASMITH_RATE_WINDOW
-_MAX_REQUESTS = int(os.environ.get("DATASMITH_RATE_MAX", "10"))
-_WINDOW_SECONDS = int(os.environ.get("DATASMITH_RATE_WINDOW", "60"))
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        logger.warning("Invalid %s — using default %d", name, default)
+        return default
+
+
+_MAX_REQUESTS = _env_int("DATASMITH_RATE_MAX", 10)
+_WINDOW_SECONDS = _env_int("DATASMITH_RATE_WINDOW", 60)
 
 _limiter = RateLimiter(max_requests=_MAX_REQUESTS, window_seconds=_WINDOW_SECONDS)
 
@@ -74,11 +100,10 @@ def get_limiter() -> RateLimiter:
 async def rate_limit_key(request: Request) -> str:
     """Extract a rate-limit key from the request.
 
-    Uses X-API-Key header if present, otherwise client IP.
+    Keyed on client IP only. The X-API-Key header is intentionally NOT
+    used — unvalidated client-supplied keys would let anyone rotate the
+    header for a fresh quota on every request.
     """
-    api_key = request.headers.get("x-api-key")
-    if api_key:
-        return f"api_key:{api_key}"
     client_ip = request.client.host if request.client else "unknown"
     return f"ip:{client_ip}"
 
@@ -104,18 +129,18 @@ from pydantic import BaseModel, Field
 
 
 class GenerateRequest(BaseModel):
-    domain: str = Field(default="custom", description="Domain name (e.g. 'e-commerce', 'healthcare')")
+    domain: str = Field(default="custom", max_length=200, description="Domain name (e.g. 'e-commerce', 'healthcare')")
     n_rows: int = Field(default=100, ge=1, le=100_000, description="Number of rows to generate")
     inject_imperfections: bool = Field(default=True, description="Apply domain imperfection profile")
     seed: Optional[int] = Field(default=None, description="Random seed for reproducibility")
-    user_prompt: str = Field(default="", description="Natural language description for LLM critique")
+    user_prompt: str = Field(default="", max_length=2000, description="Natural language description for LLM critique")
     llm_api_key: Optional[str] = Field(default=None, description="API key for LLM critique (optional)")
     llm_base_url: Optional[str] = Field(default=None, description="Base URL for LLM API")
     llm_model: Optional[str] = Field(default=None, description="Model name for LLM critique")
 
 
 class DiscoverRequest(BaseModel):
-    prompt: str = Field(description="Natural language description of the dataset you want")
+    prompt: str = Field(max_length=2000, description="Natural language description of the dataset you want")
 
 
 class SchemaItem(BaseModel):
@@ -150,20 +175,20 @@ async def root():
     """Root endpoint — API health check."""
     return {
         "service": "DataSmith API",
-        "version": "0.11.0",
+        "version": __version__,
         "docs": "/docs",
     }
 
 
 
-def require_kg() -> Database:
+def require_kg() -> KnowledgeGraph:
     """Dependency: return the initialized knowledge graph or 503."""
     if not _kg:
         raise HTTPException(status_code=503, detail="Knowledge graph not initialized")
     return _kg
 
 
-@app.get("/domains", tags=["Schema"])
+@app.get("/domains", tags=["Schema"], dependencies=[Depends(check_rate_limit)])
 async def list_domains(request: Request, kg: Database = Depends(require_kg), q: str = ""):
     """List available domains in the knowledge graph.
 
@@ -179,7 +204,7 @@ async def list_domains(request: Request, kg: Database = Depends(require_kg), q: 
     }
 
 
-@app.get("/schemas/{domain_name}", tags=["Schema"])
+@app.get("/schemas/{domain_name}", tags=["Schema"], dependencies=[Depends(check_rate_limit)])
 async def get_domain_schema(domain_name: str, request: Request, kg: Database = Depends(require_kg)):
     """Get the column schema for a domain.
 
@@ -195,7 +220,7 @@ async def get_domain_schema(domain_name: str, request: Request, kg: Database = D
     return {"domain": domain_name, "columns": enriched, "count": len(enriched)}
 
 
-@app.post("/discover", tags=["Generation"])
+@app.post("/discover", tags=["Generation"], dependencies=[Depends(check_rate_limit)])
 async def discover_from_prompt(discover_req: DiscoverRequest, request: Request, kg: Database = Depends(require_kg)):
     """Natural language → schema discovery.
 
@@ -213,7 +238,7 @@ async def discover_from_prompt(discover_req: DiscoverRequest, request: Request, 
     }
 
 
-@app.post("/generate", tags=["Generation"])
+@app.post("/generate", tags=["Generation"], dependencies=[Depends(check_rate_limit)])
 async def generate(gen_req: GenerateRequest, request: Request, kg: Database = Depends(require_kg)):
     """Generate a synthetic dataset.
 
@@ -265,7 +290,7 @@ async def generate(gen_req: GenerateRequest, request: Request, kg: Database = De
     )
 
 
-@app.post("/generate/batch", tags=["Generation"])
+@app.post("/generate/batch", tags=["Generation"], dependencies=[Depends(check_rate_limit)])
 async def generate_batch(gen_req: GenerateRequest, request: Request, kg: Database = Depends(require_kg)):
     """Generate a larger dataset using batched iterative generation.
 

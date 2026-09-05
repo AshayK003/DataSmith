@@ -142,6 +142,15 @@ class KnowledgeGraph:
         rows = self.db.fetchall("SELECT * FROM domains ORDER BY name")
         return [Domain(**r) for r in rows]
 
+    def search_domains(self, query: str) -> list:
+        """Search domains by name or description (parameterized LIKE)."""
+        like = f"%{query}%"
+        return self.db.fetchall(
+            "SELECT name, description FROM domains "
+            "WHERE name LIKE ? OR description LIKE ? ORDER BY name",
+            (like, like),
+        )
+
     # ── Dataset Schemas ──────────────────────────────────────────────────
 
     def upsert_dataset(self, dataset: DatasetSchema) -> int:

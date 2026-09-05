@@ -210,18 +210,29 @@ def check_formats(df: pd.DataFrame, schema: list[dict]) -> list[ValidationError]
                     details={"bad_count": int(no_digits), "total": len(non_null)},
                 ))
 
-        # ID format check — description contains "id" or column name matches *_id
+        # ID format check — strict PREFIX-NUMBERS pattern applies only when
+        # the schema description declares a format; otherwise IDs just need
+        # to be non-empty and unique (UUIDs, lowercase, numeric all valid).
         if re.search(r"\bid\b", desc) or re.search(r"_id$", name, re.I):
-            bad_id = non_null[~non_null.str.match(r"^[A-Z]+-\d+$")]
-            if len(bad_id) > 0:
+            if re.search(r"format|pattern|prefix", desc):
+                bad_id = non_null[~non_null.str.match(r"^[A-Z]+-\d+$")]
+                if len(bad_id) > 0:
+                    errors.append(ValidationError(
+                        column=name,
+                        check="format_check",
+                        message=(
+                            f"{len(bad_id)}/{len(non_null)} values don't match "
+                            "ID format (PREFIX-NUMBERS)"
+                        ),
+                        details={"bad_count": int(len(bad_id)), "total": len(non_null)},
+                    ))
+            elif non_null.duplicated().any():
+                dupes = int(non_null.duplicated().sum())
                 errors.append(ValidationError(
                     column=name,
-                    check="format_check",
-                    message=(
-                        f"{len(bad_id)}/{len(non_null)} values don't match "
-                        "ID format (PREFIX-NUMBERS)"
-                    ),
-                    details={"bad_count": int(len(bad_id)), "total": len(non_null)},
+                    check="uniqueness_check",
+                    message=f"{dupes}/{len(non_null)} duplicate ID values",
+                    details={"bad_count": dupes, "total": len(non_null)},
                 ))
 
     return errors

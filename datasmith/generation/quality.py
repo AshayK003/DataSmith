@@ -138,10 +138,18 @@ def compute_batch_quality(df: pd.DataFrame,
             ks = _column_ks_stat(df[name], col, ref)
             if ks is not None:
                 metrics[f"ks_{name}"] = ks
+            try:
+                batch_vals = pd.to_numeric(df[name], errors="coerce").dropna().values
+                if len(batch_vals) > 0:
+                    metrics[f"mean_{name}"] = round(float(np.mean(batch_vals)), 4)
+            except Exception as exc:
+                logger.debug("Could not compute batch mean for '%s': %s", name, exc)
 
-        # Null-rate drift
+        # Null-rate drift (absolute, for scoring) + signed (for adjustment)
         drift = _column_null_drift(df[name], col)
         metrics[f"null_drift_{name}"] = drift
+        expected_null = float(col.get("null_ratio", 0.0) or 0.0)
+        metrics[f"null_signed_{name}"] = round(float(df[name].isna().mean()) - expected_null, 4)
 
     # Dataset-level
     corr = _correlation_diff(df, schema, ref)
