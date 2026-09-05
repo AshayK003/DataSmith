@@ -218,5 +218,3 @@ def _fill_range(col: dict, name: str) -> None:
         col["min"] = 0
     elif "max" not in col:
         col["max"] = col["min"] + 100
-
-

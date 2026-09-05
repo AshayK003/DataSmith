@@ -266,8 +266,6 @@ def _sentence_generator() -> Callable:
 _gen_sentence = _sentence_generator()
 
 
-
-
 # ── Pattern matcher ─────────────────────────────────────────────────────────
 
 _TEXT_RULES: list[tuple[re.Pattern, Callable | list]] = [
